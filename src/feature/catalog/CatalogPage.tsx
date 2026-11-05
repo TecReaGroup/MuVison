@@ -1,0 +1,103 @@
+import { useMemo } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { authorById, ALBUMS, AUTHORS, VIDEOS, type Video } from '@/feature/catalog/catalog'
+import { useI18n } from '@/shared/i18n/I18nProvider'
+import type { LocalizedText } from '@/shared/i18n/locale'
+import { GRID_ITEM } from '@/shared/design/motion'
+import { PageTitle } from '@/shared/design/PageTitle'
+import { AuthorCard } from './AuthorCard'
+import { SearchEmpty } from './SearchEmpty'
+import { VideoGrid } from './VideoGrid'
+
+export type CatalogSection = 'videos' | 'albums' | 'authors'
+
+// Search matches either language so switching locale never hides results
+const matchesQuery = (text: string | LocalizedText, q: string) =>
+  (typeof text === 'string' ? [text] : [text.zh, text.en]).some((s) => s.toLowerCase().includes(q.trim().toLowerCase()))
+
+export function CatalogPage({
+  section,
+  query,
+  onPlay,
+  onAuthor,
+  onAlbum,
+}: {
+  section: CatalogSection
+  query: string
+  onPlay: (video: Video) => void
+  onAuthor: (id: string) => void
+  onAlbum: (id: string) => void
+}) {
+  const { t, tr } = useI18n()
+  const filteredVideos = useMemo(
+    () => VIDEOS.filter((v) => matchesQuery(v.title, query) || matchesQuery(authorById(v.authorId).name, query)),
+    [query],
+  )
+  const filteredAlbums = ALBUMS.filter(
+    (a) => matchesQuery(a.title, query) || matchesQuery(authorById(a.authorId).name, query),
+  )
+  const filteredAuthors = AUTHORS.filter((a) => matchesQuery(a.name, query) || matchesQuery(a.handle, query))
+
+  return section === 'videos' ? (
+    <>
+      <PageTitle title={t.navVideos} sub={t.videoCount(filteredVideos.length)} />
+      {filteredVideos.length ? (
+        <VideoGrid items={filteredVideos} onPlay={onPlay} onAuthor={onAuthor} />
+      ) : (
+        <SearchEmpty query={query} />
+      )}
+    </>
+  ) : section === 'albums' ? (
+    <>
+      <PageTitle title={t.navAlbums} sub={t.albumCount(filteredAlbums.length)} />
+      {filteredAlbums.length ? (
+        <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 md:gap-y-10 xl:grid-cols-3 2xl:grid-cols-4">
+          <AnimatePresence mode="popLayout">
+            {filteredAlbums.map((al) => {
+              const items = VIDEOS.filter((v) => v.albumId === al.id)
+              return (
+                <motion.button key={al.id} {...GRID_ITEM} onClick={() => onAlbum(al.id)} className="group text-left">
+                  <div className="relative pt-3">
+                    <div className="absolute inset-x-6 top-0 h-6 rounded-t-xl bg-stone-300/70" />
+                    <div className="absolute inset-x-3 top-1.5 h-6 rounded-t-xl bg-stone-300" />
+                    <div className="relative aspect-video overflow-hidden rounded-xl bg-stone-200 ">
+                      <img
+                        src={items[0]?.cover}
+                        alt={tr(al.title)}
+                        className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+                      />
+                      <div className="absolute inset-y-0 right-0 flex w-1/3 flex-col items-center justify-center gap-1 bg-stone-950/55 text-white backdrop-blur-sm">
+                        <span className="text-xl font-medium">{items.length}</span>
+                        <span className="text-xs text-white/70">{t.videosUnit}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <h3 className="mt-3.5 text-[15px] font-medium leading-snug">{tr(al.title)}</h3>
+                </motion.button>
+              )
+            })}
+          </AnimatePresence>
+        </div>
+      ) : (
+        <SearchEmpty query={query} />
+      )}
+    </>
+  ) : (
+    <>
+      <PageTitle title={t.navAuthors} sub={t.authorCount(filteredAuthors.length)} />
+      {filteredAuthors.length ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 xl:grid-cols-4 2xl:grid-cols-6">
+          <AnimatePresence mode="popLayout">
+            {filteredAuthors.map((a) => (
+              <motion.div key={a.id} {...GRID_ITEM}>
+                <AuthorCard author={a} onOpen={() => onAuthor(a.id)} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      ) : (
+        <SearchEmpty query={query} />
+      )}
+    </>
+  )
+}

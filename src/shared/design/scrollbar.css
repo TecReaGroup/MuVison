@@ -1,0 +1,53 @@
+/* Thin vertical scrollbar without arrow buttons; darker while scrolling, fades back when idle.
+   Chromium/Safari use ::-webkit-scrollbar (the standard scrollbar-* properties would bring back
+   native bars with arrows there). The thumb is painted with an inset shadow in `currentColor`,
+   so transitioning the container's `color` animates the thumb. */
+.thin-scroll {
+  scrollbar-gutter: stable;
+  color: rgb(231 229 228 / 0.7);
+  transition: color 0.5s ease;
+}
+.thin-scroll:hover {
+  color: rgb(214 211 209);
+}
+.thin-scroll.is-scrolling {
+  color: rgb(168 162 158);
+  transition-duration: 0.12s;
+}
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.thin-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px 0;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 8px;
+}
+@supports not selector(::-webkit-scrollbar) {
+  .thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(231 229 228) transparent;
+  }
+  .thin-scroll:hover {
+    scrollbar-color: rgb(214 211 209) transparent;
+  }
+  .thin-scroll.is-scrolling {
+    scrollbar-color: rgb(168 162 158) transparent;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}

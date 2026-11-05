@@ -1,0 +1,21 @@
+@layer components {
+  .button-primary {
+    @apply flex h-10 items-center justify-center rounded-xl bg-foreground px-5 text-sm font-medium text-white transition-colors hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-subtle;
+  }
+
+  .button-secondary {
+    @apply h-10 rounded-xl bg-surface px-4 text-sm font-medium text-secondary ring-1 ring-border transition-colors hover:bg-surface-muted hover:text-foreground;
+  }
+
+  .input-control {
+    @apply h-11 w-full rounded-xl bg-surface-muted px-3.5 text-base outline-none ring-1 ring-border transition-[box-shadow,background-color] placeholder:text-subtle focus:bg-surface focus:ring-stone-400 sm:h-10 sm:text-sm;
+  }
+}
+
+@layer base {
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--color-muted);
+    outline-offset: 3px;
+  }
+}

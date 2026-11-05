@@ -1,0 +1,12 @@
+@theme {
+  --font-sans: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  --color-canvas: #f7f6f3;
+  --color-surface: #ffffff;
+  --color-surface-muted: var(--color-stone-50);
+  --color-foreground: var(--color-stone-900);
+  --color-secondary: var(--color-stone-600);
+  --color-muted: var(--color-stone-500);
+  --color-subtle: var(--color-stone-400);
+  --color-border: var(--color-stone-200);
+  --color-accent: var(--color-amber-500);
+}

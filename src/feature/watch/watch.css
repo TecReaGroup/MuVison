@@ -1,0 +1,20 @@
+/* Watch page: on desktop, size the player from the viewport height so the whole page
+   (title, player, creator card, playlist) fits without scrolling.
+   --watch-chrome = header + paddings + back/title row + gaps + creator card. */
+.watch-shell {
+  --watch-chrome: 276px;
+  --player-w: calc((100dvh - var(--watch-chrome)) * 16 / 9);
+  margin-inline: auto;
+  max-width: 1480px;
+}
+.watch-shell--single {
+  max-width: 1100px;
+}
+@media (min-width: 1280px) {
+  .watch-shell {
+    max-width: clamp(1052px, calc(var(--player-w) + 412px), 1480px);
+  }
+  .watch-shell--single {
+    max-width: clamp(640px, var(--player-w), 1100px);
+  }
+}
