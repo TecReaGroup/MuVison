@@ -5,7 +5,6 @@ import fastifyStatic from '@fastify/static'
 import { PasswordGate } from './feature/auth/passwordGate'
 import { registerAuthRoutes } from './feature/auth/route'
 import { CreatorPhotoStore } from './feature/catalog/creatorPhoto'
-import { H264Transcoder } from './feature/catalog/h264Transcoder'
 import { VideoLibrary } from './feature/catalog/library'
 import { VideoTagWriter } from './feature/catalog/videoTagWriter'
 import { registerCatalogRoutes } from './feature/catalog/route'
@@ -20,7 +19,6 @@ const config = await loadConfig()
 configureLog(LOG_DIR, config.logLevel)
 const log = createLogger('server')
 
-const transcoder = new H264Transcoder(config.ffmpegPath, config.ffprobePath, join(TEMP_DIR, 'transcode'))
 const library = new VideoLibrary(config.videoDir)
 await library.scan()
 const creatorPhotos = new CreatorPhotoStore(config.creatorPhotoDir)
@@ -33,7 +31,6 @@ const submissionQueue = new SubmissionQueue(
   config.videoDir,
   creatorPhotos,
   tagWriter,
-  transcoder,
   join(TEMP_DIR, 'submission'),
 )
 
@@ -62,8 +59,3 @@ app.setErrorHandler((error: FastifyError, request, reply) => {
 
 await app.listen({ host: config.host, port: config.port })
 log.info(`Serving on http://${config.host}:${config.port}`)
-
-// Also resumes compactions a restart interrupted; scan() repeats per catalog request and picks up results
-transcoder
-  .scheduleLibraryCompaction(config.videoDir)
-  .catch((error: unknown) => log.error(`Library compaction not scheduled: ${error instanceof Error ? error.message : error}`))

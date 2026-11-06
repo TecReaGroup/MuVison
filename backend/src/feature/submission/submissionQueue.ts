@@ -9,7 +9,6 @@ import { moveFile } from '../../shared/fileSystem'
 import { HttpError } from '../../shared/httpError'
 import { createLogger } from '../../shared/log'
 import type { CreatorPhotoStore } from '../catalog/creatorPhoto'
-import type { H264Transcoder } from '../catalog/h264Transcoder'
 import type { VideoTagInput, VideoTagWriter } from '../catalog/videoTagWriter'
 import type { MetubeClient, MetubeDownload } from './metubeClient'
 import { canonicalWatchUrl, fetchChannelAvatarUrl, thumbnailUrls } from './youtube'
@@ -34,10 +33,8 @@ const isActive = (job: SubmissionJob) => job.status === 'downloading' || job.sta
 
 /**
  * Runs each submission to completion in the background:
- * MeTube add → poll until finished → fetch file → delete from MeTube → transcode to H.264 if needed → write tags + cover → move into the library
- * → schedule background compaction → fetch the creator's channel avatar when no creator photo exists yet.
- *
- * YouTube's own H.264 is published as is so it plays within a minute; shrinking it takes ~10 min on the server.
+ * MeTube add → poll until finished → fetch file → delete from MeTube → write tags + cover → move into the library
+ * → fetch the creator's channel avatar when no creator photo exists yet.
  *
  * Jobs live in memory only; a restart forgets them and leaves any in-flight MeTube entry behind.
  */
@@ -48,7 +45,6 @@ export class SubmissionQueue {
   readonly #videoDir: string
   readonly #photos: CreatorPhotoStore
   readonly #tagWriter: VideoTagWriter
-  readonly #transcoder: H264Transcoder
   readonly #workDir: string
 
   constructor(
@@ -57,7 +53,6 @@ export class SubmissionQueue {
     videoDir: string,
     photos: CreatorPhotoStore,
     tagWriter: VideoTagWriter,
-    transcoder: H264Transcoder,
     workDir: string,
   ) {
     this.#metube = metube
@@ -65,7 +60,6 @@ export class SubmissionQueue {
     this.#videoDir = videoDir
     this.#photos = photos
     this.#tagWriter = tagWriter
-    this.#transcoder = transcoder
     this.#workDir = workDir
   }
 
@@ -101,14 +95,11 @@ export class SubmissionQueue {
 
       job.status = 'saving'
       job.percent = null
-      // MeTube falls back to another codec when YouTube offers no H.264 stream at the requested quality
-      await this.#transcoder.ensurePlayable(downloaded)
       const cover = await this.#fetchCover(request.videoId, join(jobDir, 'cover.jpg'))
       const tagged = join(jobDir, 'tagged.mp4')
       await this.#tagWriter.write({ source: downloaded, cover, destination: tagged, tag: request })
       const saved = this.#libraryPathFor(request)
       await moveFile(tagged, saved)
-      this.#transcoder.scheduleCompaction(saved)
       await this.#ensureCreatorPhoto(request)
 
       job.status = 'saved'
