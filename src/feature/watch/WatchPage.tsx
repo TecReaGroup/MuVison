@@ -35,14 +35,13 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
   const next =
     albumVideos[albumIndex + 1] ?? outsideAlbum.find((v) => v.authorId === video.authorId) ?? outsideAlbum[0]
   const { t } = useI18n()
-  const hasPlaylist = albumVideos.length > 1
   const [isPlaying, setIsPlaying] = useState(false)
   const authorVideoCount = videos.filter((v) => v.authorId === author.id).length
 
   return (
-    <div className={`watch-shell ${hasPlaylist ? '' : 'watch-shell--single'}`}>
+    <div className="watch-shell">
       {/* Back + title share one row to keep the player close to the top */}
-      <div className={`mb-3 flex items-center gap-1.5 sm:mb-4 sm:gap-2 ${hasPlaylist ? 'xl:pr-[412px]' : ''}`}>
+      <div className="mb-3 flex items-center gap-1.5 sm:mb-4 sm:gap-2 xl:pr-[412px]">
         <button
           onClick={onBack}
           aria-label={t.back}
@@ -61,7 +60,7 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
         </motion.h1>
       </div>
 
-      <div className={`grid gap-x-8 gap-y-6 ${hasPlaylist ? 'xl:grid-cols-[minmax(0,1fr)_380px]' : ''}`}>
+      <div className="grid gap-x-8 gap-y-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <motion.div key={`player-${video.id}`} {...VIDEO_SWAP} className="-mx-4 min-w-0 sm:mx-0">
           <VideoPlayer
             key={video.id}
@@ -107,19 +106,17 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
           </section>
         </motion.div>
 
-        {hasPlaylist && (
-          // On xl the panel spans both rows and is absolutely filled, so its height follows player + info card
-          <aside className="relative min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1">
-            <PlaylistPanel
-              title={album.title}
-              items={albumVideos}
-              currentId={video.id}
-              playing={isPlaying}
-              onPlay={onPlay}
-              onOpen={() => onAlbum(album.id)}
-            />
-          </aside>
-        )}
+        {/* On xl the panel spans both rows and is absolutely filled, so its height follows player + info card */}
+        <aside className="relative min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1">
+          <PlaylistPanel
+            title={album.title}
+            items={albumVideos}
+            currentId={video.id}
+            playing={isPlaying}
+            onPlay={onPlay}
+            onOpen={() => onAlbum(album.id)}
+          />
+        </aside>
       </div>
     </div>
   )

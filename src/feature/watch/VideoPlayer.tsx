@@ -17,7 +17,9 @@ const { Player: MediaPlayer, usePlayer } = createPlayer({ features: [...videoFea
 /**
  * Video.js player; its skin owns controls, hotkeys, gestures and fullscreen, which locks to landscape.
  *
- * iPhone Safari has no element Fullscreen API, so the skin falls back to the native video presentation there.
+ * iPhone Safari has no element Fullscreen API, so the skin falls back to the native video presentation there,
+ * which follows device rotation. NOTE: do not fake fullscreen with `position: fixed` on rotation: inside the
+ * scrolling <main> and transformed ancestors iOS mis-hit-tests the controls and swallows bottom-edge taps.
  */
 export function VideoPlayer({
   video,
@@ -34,7 +36,7 @@ export function VideoPlayer({
   return (
     <PlayerI18nProvider locale={PLAYER_LOCALE[lang]}>
       <MediaPlayer poster={video.cover}>
-        <VideoSkin className="watch-player aspect-video w-full bg-black [--media-border-radius:0] sm:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.35)] sm:[--media-border-radius:1rem]">
+        <VideoSkin className="aspect-video w-full bg-black [--media-border-radius:0] sm:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.35)] sm:[--media-border-radius:1rem]">
           <Video src={video.src} preload="metadata" playsInline />
           <PlayingStateReporter onPlayingChange={onPlayingChange} />
           <EndScreen next={next} onNext={onNext} />
