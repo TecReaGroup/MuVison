@@ -24,6 +24,7 @@ export function registerWebRoutes(app: FastifyInstance, distDir: string): void {
       return reply.sendFile(assetPath, distDir, { maxAge: '365d', immutable: true })
     }
     if (isFileInside(distDir, assetPath)) return reply.sendFile(assetPath, distDir)
-    return reply.header('Cache-Control', 'no-cache').sendFile('index.html', distDir)
+    // cacheControl: false stops @fastify/static from overwriting the header with max-age=0
+    return reply.header('Cache-Control', 'no-cache').sendFile('index.html', distDir, { cacheControl: false })
   })
 }
