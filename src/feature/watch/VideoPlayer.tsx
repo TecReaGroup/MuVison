@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import type { Video } from '@/feature/catalog/catalog'
+import { formatDuration, type Video } from '@/feature/catalog/catalog'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import {
   CollapseIcon,
@@ -14,16 +14,11 @@ import {
 } from '@/shared/design/icon'
 import { EASE } from '@/shared/design/motion'
 
-const toSeconds = (d: string) => d.split(':').reduce((acc, n) => acc * 60 + Number(n), 0)
-const formatPlaybackTime = (s: number) => {
-  const t = Math.max(0, Math.floor(s))
-  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
-}
 const RATES = [1, 1.25, 1.5, 2]
-const TICK_MS = 250
 const IDLE_MS = 2500
+const SEEK_STEP_SECONDS = 5
 
-/** Simulated player: drives a timeline over the cover image with full playback controls. */
+/** Native <video> playback behind custom controls; React state mirrors the media element's events. */
 export function VideoPlayer({
   video,
   next,
@@ -35,9 +30,11 @@ export function VideoPlayer({
   onNext: () => void
   onPlayingChange: (playing: boolean) => void
 }) {
-  const total = toSeconds(video.duration)
-  const { t, tr } = useI18n()
+  const { t } = useI18n()
+  // Backend duration lets the timeline render before the file's metadata loads
+  const [total, setTotal] = useState(video.durationSeconds)
   const [playing, setPlaying] = useState(false)
+  const [ended, setEnded] = useState(false)
   const [started, setStarted] = useState(false)
   const [time, setTime] = useState(0)
   const [rate, setRate] = useState(1)
@@ -48,25 +45,35 @@ export function VideoPlayer({
   const [scrubbing, setScrubbing] = useState(false)
   const [flash, setFlash] = useState<'play' | 'pause' | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
   const idleTimer = useRef<number>(0)
   // Touch has no hover: first tap reveals controls, a tap while visible toggles playback
   const pointerType = useRef<string>('mouse')
   const canFullscreen = typeof document !== 'undefined' && !!document.fullscreenEnabled
-  const ended = time >= total
 
   const toggle = useCallback(() => {
+    const media = videoRef.current!
     setStarted(true)
-    if (ended) {
-      setTime(0)
-      setPlaying(true)
-      return
+    if (media.paused) {
+      // play() on an ended video restarts it from the beginning, which needs no flash
+      if (!media.ended) setFlash('play')
+      // play() rejects when a pause interrupts it; the pause event already keeps state in sync
+      media.play().catch(() => undefined)
+    } else {
+      setFlash('pause')
+      media.pause()
     }
-    setFlash(playing ? 'pause' : 'play')
-    setPlaying(!playing)
-  }, [ended, playing])
+  }, [])
 
-  const seek = useCallback((s: number) => setTime(Math.min(total, Math.max(0, s))), [total])
+  const seek = useCallback(
+    (s: number) => {
+      const media = videoRef.current!
+      media.currentTime = Math.min(total, Math.max(0, s))
+      setTime(media.currentTime)
+    },
+    [total],
+  )
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen()
@@ -74,14 +81,13 @@ export function VideoPlayer({
   }, [])
 
   useEffect(() => {
-    if (!playing || scrubbing) return
-    const id = window.setInterval(() => setTime((t) => Math.min(total, t + (TICK_MS / 1000) * rate)), TICK_MS)
-    return () => window.clearInterval(id)
-  }, [playing, scrubbing, rate, total])
+    videoRef.current!.playbackRate = rate
+  }, [rate])
 
+  // React does not keep the `muted` attribute in sync, so set the property directly
   useEffect(() => {
-    if (ended) setPlaying(false)
-  }, [ended])
+    videoRef.current!.muted = muted
+  }, [muted])
 
   useEffect(() => {
     onPlayingChange(playing)
@@ -111,14 +117,14 @@ export function VideoPlayer({
         toggle()
       } else if (e.key === 'ArrowRight') {
         setStarted(true)
-        setTime((t) => Math.min(total, t + 5))
-      } else if (e.key === 'ArrowLeft') setTime((t) => Math.max(0, t - 5))
+        seek(videoRef.current!.currentTime + SEEK_STEP_SECONDS)
+      } else if (e.key === 'ArrowLeft') seek(videoRef.current!.currentTime - SEEK_STEP_SECONDS)
       else if (e.key === 'm') setMuted((m) => !m)
       else if (e.key === 'f') toggleFullscreen()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [toggle, toggleFullscreen, total])
+  }, [toggle, toggleFullscreen, seek])
 
   const wake = () => {
     setIdle(false)
@@ -145,12 +151,22 @@ export function VideoPlayer({
         playing && idle && !scrubbing ? 'cursor-none' : ''
       }`}
     >
-      {/* Frame: slow drift tied to the timeline so playback feels alive */}
-      <img
-        src={video.cover.replace('w=800', 'w=1920')}
-        alt={tr(video.title)}
-        style={{ transform: `scale(${1.01 + progress * 0.04})` }}
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-linear"
+      <video
+        ref={videoRef}
+        src={video.src}
+        poster={video.cover}
+        preload="metadata"
+        playsInline
+        onLoadedMetadata={(e) => setTotal(e.currentTarget.duration)}
+        onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
+        onPlay={() => {
+          setPlaying(true)
+          setEnded(false)
+        }}
+        onPause={() => setPlaying(false)}
+        onSeeking={() => setEnded(false)}
+        onEnded={() => setEnded(true)}
+        className="absolute inset-0 h-full w-full object-contain"
       />
 
       {/* Click surface */}
@@ -196,7 +212,7 @@ export function VideoPlayer({
               <PlayIcon className="h-8 w-8 translate-x-0.5" />
             </span>
             <span className="absolute bottom-5 right-5 rounded-md bg-black/60 px-2 py-1 text-xs font-medium tabular-nums text-white backdrop-blur">
-              {video.duration}
+              {formatDuration(total)}
             </span>
           </motion.div>
         )}
@@ -225,10 +241,10 @@ export function VideoPlayer({
                   onClick={onNext}
                   className="group flex items-center gap-3 rounded-2xl bg-surface p-2 pr-5 text-left text-foreground shadow-xl transition-colors hover:bg-surface-muted"
                 >
-                  <img src={next.cover} alt={tr(next.title)} className="aspect-video w-28 rounded-xl object-cover" />
+                  <img src={next.cover} alt={next.title} className="aspect-video w-28 rounded-xl object-cover" />
                   <span className="max-w-56">
                     <span className="block text-xs text-subtle">{t.next}</span>
-                    <span className="line-clamp-2 text-sm font-medium leading-snug">{tr(next.title)}</span>
+                    <span className="line-clamp-2 text-sm font-medium leading-snug">{next.title}</span>
                   </span>
                 </button>
               )}
@@ -296,7 +312,7 @@ export function VideoPlayer({
                 className="pointer-events-none absolute -top-8 -translate-x-1/2 rounded-md bg-black/80 px-2 py-1 text-[11px] font-medium tabular-nums text-white"
                 style={{ left: `${hover * 100}%` }}
               >
-                {formatPlaybackTime(hover * total)}
+                {formatDuration(hover * total)}
               </motion.span>
             )}
           </AnimatePresence>
@@ -315,7 +331,7 @@ export function VideoPlayer({
             {muted ? <MuteIcon className="h-5 w-5" /> : <VolumeIcon className="h-5 w-5" />}
           </PlayerControlButton>
           <span className="ml-2 text-[13px] tabular-nums text-white/90">
-            {formatPlaybackTime(time)} <span className="text-white/50">/ {video.duration}</span>
+            {formatDuration(time)} <span className="text-white/50">/ {formatDuration(total)}</span>
           </span>
 
           <div className="ml-auto flex items-center gap-1">

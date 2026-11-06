@@ -1,0 +1,22 @@
+[server]
+host = "127.0.0.1"
+port = 8000
+
+[library]
+# Relative to backend/
+video_dir = "data/video"
+# Creator photos named "<Creator tag>.jpg|.jpeg|.png|.webp"; missing ones are fetched from YouTube on download
+creator_photo_dir = "data/creator"
+
+[submission]
+# MeTube video quality; options: best, 2160, 1440, 1080, 720, 480, 360, 240, worst
+quality = "best"
+# How long to wait for MeTube to finish one download before giving up
+download_timeout_seconds = 300
+poll_interval_seconds = 2
+# ffmpeg executable used to write title/creator/album and the cover; a bare name is looked up on PATH
+ffmpeg_path = "ffmpeg"
+
+[log]
+# Options: DEBUG, INFO, WARN, ERROR
+level = "INFO"

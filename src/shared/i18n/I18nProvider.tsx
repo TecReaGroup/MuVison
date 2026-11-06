@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Language, LocalizedText } from './locale'
+import type { Language } from './locale'
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
@@ -31,11 +31,22 @@ const TRANSLATIONS = {
     fieldAuthor: '作者',
     fieldAlbum: '合集',
     albumPlaceholder: '输入或选择一个合集',
+    creatorPlaceholder: '输入或选择一位作者',
+    expand: '展开',
+    collapse: '收起',
     newBadge: '新建',
     cancel: '取消',
     submit: '提交',
     submitted: '提交成功',
-    submittedDesc: '感谢分享，视频审核通过后会出现在站点中。',
+    submittedDesc: '视频正在后台下载，完成后会自动加入视频库，可以关闭此窗口。',
+    videoUnavailable: '视频不存在或不可访问',
+    previewFailed: '解析失败，请稍后再试',
+    submitFailed: '提交失败，请稍后再试',
+    alreadySubmitted: '这个视频正在下载中',
+    jobDownloading: (percent: number | null) => (percent === null ? '等待下载…' : `下载中 ${Math.floor(percent)}%`),
+    jobSaving: '正在写入元数据…',
+    jobSaved: '已保存到视频库',
+    jobFailed: (reason: string) => `失败：${reason}`,
     submitAnother: '继续提交',
     done: '完成',
     next: '下一个',
@@ -48,6 +59,8 @@ const TRANSLATIONS = {
     exitFullscreen: '退出全屏',
     speed: '播放速度',
     language: '语言',
+    catalogLoadFailed: '视频库加载失败',
+    retry: '重试',
   },
   en: {
     navVideos: 'Videos',
@@ -76,11 +89,23 @@ const TRANSLATIONS = {
     fieldAuthor: 'Creator',
     fieldAlbum: 'Album',
     albumPlaceholder: 'Type or pick an album',
+    creatorPlaceholder: 'Type or pick a creator',
+    expand: 'Show options',
+    collapse: 'Hide options',
     newBadge: 'New',
     cancel: 'Cancel',
     submit: 'Submit',
     submitted: 'Submitted',
-    submittedDesc: 'Thanks for sharing. The video will appear once it’s reviewed.',
+    submittedDesc: 'Downloading in the background. It joins the library when done — you can close this.',
+    videoUnavailable: 'This video is unavailable',
+    previewFailed: 'Couldn’t fetch details. Try again later',
+    submitFailed: 'Submission failed. Try again later',
+    alreadySubmitted: 'This video is already downloading',
+    jobDownloading: (percent: number | null) =>
+      percent === null ? 'Waiting to download…' : `Downloading ${Math.floor(percent)}%`,
+    jobSaving: 'Writing metadata…',
+    jobSaved: 'Saved to the library',
+    jobFailed: (reason: string) => `Failed: ${reason}`,
     submitAnother: 'Another',
     done: 'Done',
     next: 'Up next',
@@ -93,6 +118,8 @@ const TRANSLATIONS = {
     exitFullscreen: 'Exit fullscreen',
     speed: 'Playback speed',
     language: 'Language',
+    catalogLoadFailed: 'Could not load the library',
+    retry: 'Retry',
   },
 }
 
@@ -102,7 +129,6 @@ type I18nContextValue = {
   lang: Language
   setLang: (l: Language) => void
   t: TranslationDictionary
-  tr: (l: LocalizedText) => string
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null)
@@ -127,7 +153,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       lang,
       setLang,
       t: TRANSLATIONS[lang],
-      tr: (l) => l[lang],
     }
   }, [lang])
 

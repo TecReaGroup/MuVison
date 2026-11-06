@@ -2,7 +2,7 @@ node_modules/
 dist/
 build/
 .cache/
-.env*
+.env
 .vite/
 vite.config.*.timestamp-*
 *.tsbuildinfo
@@ -11,3 +11,7 @@ vite.config.*.timestamp-*
 !/log/.gitkeep
 /temp/
 *.log
+/backend/data/video/*
+!/backend/data/video/.gitkeep
+/backend/data/creator/*
+!/backend/data/creator/.gitkeep

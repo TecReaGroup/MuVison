@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
-import { albumById, authorById, VIDEOS, type Video } from '@/feature/catalog/catalog'
+import type { Video } from '@/feature/catalog/catalog'
+import { useCatalog } from '@/feature/catalog/CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { ArrowLeftIcon, ArrowRightIcon } from '@/shared/design/icon'
 import { EASE } from '@/shared/design/motion'
@@ -24,18 +25,19 @@ const VIDEO_SWAP = {
 }
 
 export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: WatchProps) {
+  const { videos, authorById, albumById } = useCatalog()
   const author = authorById(video.authorId)
   const album = albumById(video.albumId)
-  const albumVideos = VIDEOS.filter((v) => v.albumId === video.albumId)
+  const albumVideos = videos.filter((v) => v.albumId === video.albumId)
   const albumIndex = albumVideos.findIndex((v) => v.id === video.id)
-  const related = VIDEOS.filter((v) => v.albumId !== video.albumId).sort(
-    (a, b) => Number(b.category === video.category) - Number(a.category === video.category),
-  )
-  const next = albumVideos[albumIndex + 1] ?? related[0]
-  const { t, tr } = useI18n()
+  // After the album runs out, continue with the creator's other work before anything else
+  const outsideAlbum = videos.filter((v) => v.albumId !== video.albumId)
+  const next =
+    albumVideos[albumIndex + 1] ?? outsideAlbum.find((v) => v.authorId === video.authorId) ?? outsideAlbum[0]
+  const { t } = useI18n()
   const hasPlaylist = albumVideos.length > 1
   const [isPlaying, setIsPlaying] = useState(false)
-  const authorVideoCount = VIDEOS.filter((v) => v.authorId === author.id).length
+  const authorVideoCount = videos.filter((v) => v.authorId === author.id).length
 
   return (
     <div className={`watch-shell ${hasPlaylist ? '' : 'watch-shell--single'}`}>
@@ -52,10 +54,10 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
         <motion.h1
           key={`title-${video.id}`}
           {...VIDEO_SWAP}
-          title={tr(video.title)}
+          title={video.title}
           className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight tracking-[-0.015em] sm:text-[22px]"
         >
-          {tr(video.title)}
+          {video.title}
         </motion.h1>
       </div>
 
@@ -84,11 +86,9 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
                 />
                 <span className="min-w-0">
                   <span className="block truncate font-medium leading-tight transition-colors duration-300 group-hover:text-secondary">
-                    {tr(author.name)}
+                    {author.name}
                   </span>
                   <span className="mt-1 block truncate text-[13px] text-subtle">
-                    {author.handle}
-                    <span className="mx-1.5 text-stone-300">·</span>
                     {t.videoCount(authorVideoCount)}
                   </span>
                 </span>
@@ -111,7 +111,7 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
           // On xl the panel spans both rows and is absolutely filled, so its height follows player + info card
           <aside className="relative min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1">
             <PlaylistPanel
-              title={tr(album.title)}
+              title={album.title}
               items={albumVideos}
               currentId={video.id}
               playing={isPlaying}

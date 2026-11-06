@@ -1,4 +1,5 @@
-import { albumById, VIDEOS, type Video } from './catalog'
+import type { Video } from './catalog'
+import { useCatalog } from './CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { ArrowLeftIcon } from '@/shared/design/icon'
 import { VideoGrid } from './VideoGrid'
@@ -12,9 +13,10 @@ type DetailProps = {
 }
 
 export function AlbumDetail({ id, backLabel, onBack, onPlay, onAuthor }: DetailProps) {
+  const { videos, albumById } = useCatalog()
   const album = albumById(id)
-  const items = VIDEOS.filter((video) => video.albumId === id)
-  const { t, tr } = useI18n()
+  const items = videos.filter((video) => video.albumId === id)
+  const { t } = useI18n()
   return (
     <div>
       <button
@@ -29,13 +31,13 @@ export function AlbumDetail({ id, backLabel, onBack, onPlay, onAuthor }: DetailP
         <div>
           <img
             src={items[0]?.cover}
-            alt={tr(album.title)}
+            alt={album.title}
             className="aspect-video w-28 rounded-lg object-cover sm:w-36 md:w-48 md:rounded-xl"
           />
         </div>
         <div>
           <p className="text-xs font-medium tracking-wider text-subtle">{t.album}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">{tr(album.title)}</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">{album.title}</h1>
         </div>
       </div>
 

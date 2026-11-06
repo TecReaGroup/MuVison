@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { authorById, type Video } from '@/feature/catalog/catalog'
+import { formatDuration, type Video } from '@/feature/catalog/catalog'
+import { useCatalog } from '@/feature/catalog/CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { ArrowRightIcon } from '@/shared/design/icon'
 import { EASE } from '@/shared/design/motion'
@@ -131,8 +132,7 @@ function PlaylistItem({
   playing: boolean
   onPlay: (v: Video) => void
 }) {
-  const author = authorById(video.authorId)
-  const { tr } = useI18n()
+  const author = useCatalog().authorById(video.authorId)
   return (
     <motion.button
       data-active={active}
@@ -162,12 +162,12 @@ function PlaylistItem({
       >
         <img src={video.cover} alt="" loading="lazy" className="h-full w-full object-cover " />
         <span className="absolute bottom-1 right-1 rounded-md bg-stone-950/75 px-1.5 py-px text-[10px] font-medium tabular-nums text-white backdrop-blur-sm">
-          {video.duration}
+          {formatDuration(video.durationSeconds)}
         </span>
       </span>
       <span className="relative min-w-0 flex-1">
-        <span className="line-clamp-2 text-[13px] font-medium leading-snug">{tr(video.title)}</span>
-        <span className={`mt-1 block truncate text-xs text-muted`}>{tr(author.name)}</span>
+        <span className="line-clamp-2 text-[13px] font-medium leading-snug">{video.title}</span>
+        <span className={`mt-1 block truncate text-xs text-muted`}>{author.name}</span>
       </span>
     </motion.button>
   )

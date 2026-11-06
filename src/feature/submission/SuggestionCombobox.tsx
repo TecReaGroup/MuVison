@@ -1,6 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ALBUMS, authorById, VIDEOS } from '@/feature/catalog/catalog'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { CheckIcon, ChevronDownIcon } from '@/shared/design/icon'
 import { EASE } from '@/shared/design/motion'
@@ -10,45 +9,45 @@ const LIST_MAX = 300
 const LIST_MIN = 120
 const VIEWPORT_GAP = 16
 
-type AlbumOption = { id: string; title: string; meta: string; cover?: string }
+export type Suggestion = { id: string; label: string; meta: string; thumbnail: ReactNode }
 
-/** Searchable album picker that also accepts a new album name. */
-export function AlbumCombobox({
+/** Free-text input that suggests existing values; a value outside the list is flagged as new. */
+export function SuggestionCombobox({
   id,
   listId,
   value,
   onChange,
+  suggestions,
+  placeholder,
   inputRef,
 }: {
   id: string
   listId: string
   value: string
   onChange: (v: string) => void
-  inputRef: React.RefObject<HTMLInputElement | null>
+  suggestions: Suggestion[]
+  placeholder: string
+  inputRef?: React.RefObject<HTMLInputElement | null>
 }) {
-  const { t, tr } = useI18n()
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
+  // Only typed text filters; opening shows everything so a prefilled value never hides the choices
+  const [filter, setFilter] = useState('')
   const [highlight, setHighlight] = useState(0)
   const [maxHeight, setMaxHeight] = useState(LIST_MAX)
   const rootRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const scroll = useScrollActivity()
 
-  const all = ALBUMS.map((a) => {
-    const items = VIDEOS.filter((v) => v.albumId === a.id)
-    return {
-      id: a.id,
-      title: tr(a.title),
-      meta: `${tr(authorById(a.authorId).name)} · ${t.videoCount(items.length)}`,
-      cover: items[0]?.cover,
-    }
-  })
-  const q = value.trim().toLowerCase()
-  const matches = q ? all.filter((a) => a.title.toLowerCase().includes(q)) : all
-  const exact = all.find((a) => a.title.toLowerCase() === q)
-  // New names are flagged by the "New" badge in the input, so the list only shows existing matches
-  const options: AlbumOption[] = matches
-  const isNew = !!q && !exact
+  const q = filter.trim().toLowerCase()
+  const options = q ? suggestions.filter((s) => s.label.toLowerCase().includes(q)) : suggestions
+  const normalizedValue = value.trim().toLowerCase()
+  const isNew = !!normalizedValue && !suggestions.some((s) => s.label.toLowerCase() === normalizedValue)
+
+  const openList = () => {
+    setFilter('')
+    setOpen(true)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -57,7 +56,7 @@ export function AlbumCombobox({
     return () => document.removeEventListener('pointerdown', onDown)
   }, [open])
 
-  useEffect(() => setHighlight(0), [value])
+  useEffect(() => setHighlight(0), [filter])
 
   // Open upward over the preview/fields above; cap height to the space left in the viewport
   useLayoutEffect(() => {
@@ -78,15 +77,15 @@ export function AlbumCombobox({
     listRef.current?.querySelector<HTMLElement>(`[data-index="${highlight}"]`)?.scrollIntoView({ block: 'nearest' })
   }, [highlight])
 
-  const choose = (o: AlbumOption) => {
-    onChange(o.title)
+  const choose = (s: Suggestion) => {
+    onChange(s.label)
     setOpen(false)
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      if (!open) setOpen(true)
+      if (!open) openList()
       else setHighlight((h) => Math.min(options.length - 1, h + 1))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
@@ -115,11 +114,12 @@ export function AlbumCombobox({
           value={value}
           onChange={(e) => {
             onChange(e.target.value)
+            setFilter(e.target.value)
             setOpen(true)
           }}
-          onClick={() => setOpen(true)}
+          onClick={() => !open && openList()}
           onKeyDown={onKeyDown}
-          placeholder={t.albumPlaceholder}
+          placeholder={placeholder}
           required
           className="input-control pr-20"
         />
@@ -129,9 +129,17 @@ export function AlbumCombobox({
               {t.newBadge}
             </span>
           )}
-          <ChevronDownIcon
-            className={`h-4 w-4 text-subtle transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          />
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={open ? t.collapse : t.expand}
+            // Keep focus in the input so typing continues after toggling
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => (open ? setOpen(false) : openList())}
+            className="pointer-events-auto -mr-1.5 flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:bg-stone-100 hover:text-stone-700"
+          >
+            <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+          </button>
         </div>
       </div>
 
@@ -149,26 +157,24 @@ export function AlbumCombobox({
             onScroll={scroll.onScroll}
             className={`${scroll.scrollClass} absolute inset-x-0 z-10 bottom-full mb-1.5 overflow-y-auto rounded-xl bg-surface p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.2)] ring-1 ring-border/80`}
           >
-            {options.map((o, i) => {
+            {options.map((s, i) => {
               const active = i === highlight
-              const selected = o.title === value
+              const selected = s.label === value
               return (
                 <li
-                  key={o.id}
+                  key={s.id}
                   data-index={i}
                   role="option"
                   aria-selected={selected}
                   onMouseEnter={() => setHighlight(i)}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => choose(o)}
+                  onClick={() => choose(s)}
                   className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-100 ${active ? 'bg-stone-100' : ''}`}
                 >
-                  <span className="aspect-video w-12 shrink-0 overflow-hidden rounded-md bg-stone-200 ring-1 ring-black/5">
-                    {o.cover && <img src={o.cover} alt="" className="h-full w-full object-cover" />}
-                  </span>
+                  {s.thumbnail}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-stone-800">{o.title}</span>
-                    <span className="block truncate text-xs text-subtle">{o.meta}</span>
+                    <span className="block truncate text-sm font-medium text-stone-800">{s.label}</span>
+                    <span className="block truncate text-xs text-subtle">{s.meta}</span>
                   </span>
                   {selected && <CheckIcon className="h-4 w-4 shrink-0 text-stone-700" />}
                 </li>

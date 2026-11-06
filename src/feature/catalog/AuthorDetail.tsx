@@ -1,4 +1,5 @@
-import { authorById, VIDEOS, type Video } from './catalog'
+import type { Video } from './catalog'
+import { useCatalog } from './CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { ArrowLeftIcon } from '@/shared/design/icon'
 import { VideoGrid } from './VideoGrid'
@@ -12,9 +13,10 @@ type DetailProps = {
 }
 
 export function AuthorDetail({ id, backLabel, onBack, onPlay, onAuthor }: DetailProps) {
+  const { videos, authorById } = useCatalog()
   const author = authorById(id)
-  const items = VIDEOS.filter((video) => video.authorId === id)
-  const { t, tr } = useI18n()
+  const items = videos.filter((video) => video.authorId === id)
+  const { t } = useI18n()
   return (
     <div>
       <button
@@ -29,14 +31,14 @@ export function AuthorDetail({ id, backLabel, onBack, onPlay, onAuthor }: Detail
         <div>
           <img
             src={author.avatar}
-            alt={tr(author.name)}
+            alt={author.name}
             className="h-16 w-16 rounded-full object-cover ring-4 ring-white md:h-24 md:w-24"
           />
         </div>
         <div>
           <p className="text-xs font-medium tracking-wider text-subtle">{t.author}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">{tr(author.name)}</h1>
-          <p className="mt-2 text-sm text-muted">{author.handle}</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">{author.name}</h1>
+          <p className="mt-2 text-sm text-muted">{t.videoCount(items.length)}</p>
         </div>
       </div>
 

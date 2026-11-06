@@ -1,16 +1,43 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { VIDEOS } from '@/feature/catalog/catalog'
-import { useI18n } from '@/shared/i18n/I18nProvider'
+import { useCatalog } from '@/feature/catalog/CatalogProvider'
+import { useI18n, type TranslationDictionary } from '@/shared/i18n/I18nProvider'
+import { ApiError } from '@/shared/http/requestJson'
 import { CheckIcon, CloseIcon, LinkIcon, SpinnerIcon } from '@/shared/design/icon'
 import { EASE } from '@/shared/design/motion'
 import { Field } from '@/shared/design/Field'
-import { AlbumCombobox } from './AlbumCombobox'
-import { parseYouTubeId } from './youtubeUrl'
-import { loadSubmissionPreview, type SubmissionPreview } from './submissionPreview'
+import { SuggestionCombobox } from './SuggestionCombobox'
+import { useAlbumSuggestions, useCreatorSuggestions } from './catalogSuggestion'
+import {
+  createSubmission,
+  fetchSubmissionJob,
+  fetchSubmissionPreview,
+  isSubmissionSettled,
+  type SubmissionJob,
+  type SubmissionPreview,
+} from './submissionApi'
 
-const SUBMIT_DELAY_MS = 800
+const JOB_POLL_INTERVAL_MS = 2000
 type Step = 'input' | 'form' | 'done'
+
+function previewErrorText(error: unknown, t: TranslationDictionary) {
+  if (error instanceof ApiError && error.status === 400) return t.invalidUrl
+  if (error instanceof ApiError && error.status === 404) return t.videoUnavailable
+  return t.previewFailed
+}
+
+function jobStatusText(job: SubmissionJob, t: TranslationDictionary) {
+  switch (job.status) {
+    case 'downloading':
+      return t.jobDownloading(job.percent)
+    case 'saving':
+      return t.jobSaving
+    case 'saved':
+      return t.jobSaved
+    case 'failed':
+      return t.jobFailed(job.error ?? '')
+  }
+}
 
 export default function SubmitDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return <AnimatePresence>{open && <Dialog onClose={onClose} />}</AnimatePresence>
@@ -26,9 +53,21 @@ function Dialog({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
   const [album, setAlbum] = useState('')
+  const [job, setJob] = useState<SubmissionJob | null>(null)
+  const { refresh: refreshCatalog } = useCatalog()
+  const albumSuggestions = useAlbumSuggestions()
+  const creatorSuggestions = useCreatorSuggestions()
   const urlRef = useRef<HTMLInputElement>(null)
   const albumRef = useRef<HTMLInputElement>(null)
-  const ids = { title: useId(), url: useId(), name: useId(), author: useId(), album: useId(), list: useId() }
+  const ids = {
+    title: useId(),
+    url: useId(),
+    name: useId(),
+    author: useId(),
+    authorList: useId(),
+    album: useId(),
+    albumList: useId(),
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -45,30 +84,53 @@ function Dialog({ onClose }: { onClose: () => void }) {
     if (step === 'form') albumRef.current?.focus()
   }, [step])
 
+  // Poll until the backend settles the job; a saved video is pulled into the catalog right away
+  useEffect(() => {
+    if (!job || isSubmissionSettled(job)) return
+    const timer = window.setTimeout(async () => {
+      try {
+        const next = await fetchSubmissionJob(job.id)
+        setJob(next)
+        if (next.status === 'saved') void refreshCatalog()
+      } catch (pollError) {
+        console.error(pollError)
+        // A new object re-arms this effect, so a transient failure only delays the next poll
+        setJob({ ...job })
+      }
+    }, JOB_POLL_INTERVAL_MS)
+    return () => window.clearTimeout(timer)
+  }, [job, refreshCatalog])
+
   const parseLink = async (e: React.FormEvent) => {
     e.preventDefault()
-    const id = parseYouTubeId(url)
-    if (!id) {
-      setError(t.invalidUrl)
-      return
-    }
     setError('')
     setLoading(true)
-    const preview = await loadSubmissionPreview(id)
-    setLoading(false)
-    setParsed(preview)
-    setTitle(preview.title)
-    setAuthor(preview.author)
-    setStep('form')
+    try {
+      const preview = await fetchSubmissionPreview(url)
+      setParsed(preview)
+      setTitle(preview.title)
+      setAuthor(preview.creator)
+      setStep('form')
+    } catch (previewError) {
+      setError(previewErrorText(previewError, t))
+    } finally {
+      setLoading(false)
+    }
   }
 
   const submitVideo = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!album.trim() || !title.trim() || !author.trim()) return
+    setError('')
     setLoading(true)
-    await new Promise((r) => window.setTimeout(r, SUBMIT_DELAY_MS))
-    setLoading(false)
-    setStep('done')
+    try {
+      setJob(await createSubmission({ url, title, creator: author, album }))
+      setStep('done')
+    } catch (submitError) {
+      setError(submitError instanceof ApiError && submitError.status === 409 ? t.alreadySubmitted : t.submitFailed)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const reset = () => {
@@ -78,6 +140,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
     setTitle('')
     setAuthor('')
     setAlbum('')
+    setJob(null)
     setError('')
   }
 
@@ -178,15 +241,12 @@ function Dialog({ onClose }: { onClose: () => void }) {
                   <img
                     src={parsed.thumbnail}
                     alt=""
-                    onError={(e) => (e.currentTarget.src = VIDEOS[0].cover)}
+                    onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
                     className="h-full w-full object-cover"
                   />
-                  <span className="absolute bottom-1 right-1 rounded bg-stone-950/75 px-1 py-px text-[10px] font-medium tabular-nums text-white">
-                    {parsed.duration}
-                  </span>
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs text-subtle">youtu.be/{parsed.id}</p>
+                  <p className="truncate text-xs text-subtle">youtu.be/{parsed.videoId}</p>
                   <button
                     type="button"
                     onClick={reset}
@@ -208,24 +268,28 @@ function Dialog({ onClose }: { onClose: () => void }) {
                   />
                 </Field>
                 <Field id={ids.author} label={t.fieldAuthor} required>
-                  <input
+                  <SuggestionCombobox
                     id={ids.author}
+                    listId={ids.authorList}
                     value={author}
-                    onChange={(e) => setAuthor(e.target.value)}
-                    required
-                    className="input-control"
+                    onChange={setAuthor}
+                    suggestions={creatorSuggestions}
+                    placeholder={t.creatorPlaceholder}
                   />
                 </Field>
                 <Field id={ids.album} label={t.fieldAlbum} required>
-                  <AlbumCombobox
+                  <SuggestionCombobox
                     inputRef={albumRef}
                     id={ids.album}
-                    listId={ids.list}
+                    listId={ids.albumList}
                     value={album}
                     onChange={setAlbum}
+                    suggestions={albumSuggestions}
+                    placeholder={t.albumPlaceholder}
                   />
                 </Field>
               </div>
+              {error && <p className="mt-4 text-[13px] text-red-500">{error}</p>}
             </div>
 
             <div className="flex items-center justify-between gap-2 px-6 pb-6">
@@ -239,17 +303,37 @@ function Dialog({ onClose }: { onClose: () => void }) {
           </form>
         )}
 
-        {step === 'done' && parsed && (
+        {step === 'done' && job && (
           <div>
             <div className="px-6 pb-6 pt-5">
               <div className="flex items-center gap-3.5 rounded-xl bg-surface-muted p-2.5 ring-1 ring-border/70">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <CheckIcon className="h-5 w-5" />
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                    job.status === 'saved'
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : job.status === 'failed'
+                        ? 'bg-red-50 text-red-500'
+                        : 'bg-stone-100 text-subtle'
+                  }`}
+                >
+                  {job.status === 'saved' ? (
+                    <CheckIcon className="h-5 w-5" />
+                  ) : job.status === 'failed' ? (
+                    <CloseIcon className="h-5 w-5" />
+                  ) : (
+                    <SpinnerIcon className="h-5 w-5" />
+                  )}
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{title}</p>
                   <p className="truncate text-xs text-muted">
                     {author} · {album}
+                  </p>
+                  <p
+                    title={job.error ?? undefined}
+                    className={`mt-1 truncate text-xs ${job.status === 'failed' ? 'text-red-500' : 'text-subtle'}`}
+                  >
+                    {jobStatusText(job, t)}
                   </p>
                 </div>
               </div>

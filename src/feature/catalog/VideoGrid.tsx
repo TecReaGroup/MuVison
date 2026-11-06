@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { authorById, type Video } from './catalog'
-import { useI18n } from '@/shared/i18n/I18nProvider'
+import { formatDuration, type Video } from './catalog'
+import { useCatalog } from './CatalogProvider'
 import { PlayIcon } from '@/shared/design/icon'
 import { GRID_ITEM } from '@/shared/design/motion'
 
@@ -37,8 +37,7 @@ function VideoCard({
   onPlay: (v: Video) => void
   onAuthor: (id: string) => void
 }) {
-  const author = authorById(video.authorId)
-  const { tr } = useI18n()
+  const author = useCatalog().authorById(video.authorId)
   return (
     <article className="group">
       <button
@@ -47,7 +46,7 @@ function VideoCard({
       >
         <img
           src={video.cover}
-          alt={tr(video.title)}
+          alt={video.title}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
         />
@@ -56,19 +55,19 @@ function VideoCard({
           <PlayIcon className="h-5 w-5 translate-x-px" />
         </span>
         <span className="absolute bottom-2 right-2 rounded-md bg-stone-950/75 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-white">
-          {video.duration}
+          {formatDuration(video.durationSeconds)}
         </span>
       </button>
       <button onClick={() => onPlay(video)} className="mt-3 block text-left">
         <h3 className="line-clamp-1 text-[15px] font-medium leading-snug text-foreground transition-colors duration-200 group-hover:text-secondary">
-          {tr(video.title)}
+          {video.title}
         </h3>
       </button>
       <button
         onClick={() => onAuthor(author.id)}
         className="mt-1 text-sm text-muted transition-colors duration-300 hover:text-foreground"
       >
-        {tr(author.name)}
+        {author.name}
       </button>
     </article>
   )
