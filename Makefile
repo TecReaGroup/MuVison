@@ -1,4 +1,4 @@
-.PHONY: install run run-frontend run-backend
+.PHONY: install run run-frontend run-backend docker
 
 install:
 	pnpm install --frozen-lockfile
@@ -12,3 +12,6 @@ run-frontend:
 
 run-backend:
 	pnpm --dir backend dev
+
+docker:
+	docker compose up -d --build
