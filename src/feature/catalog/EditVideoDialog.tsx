@@ -6,7 +6,7 @@ import { SpinnerIcon } from '@/shared/design/icon'
 import { Field } from '@/shared/design/Field'
 import { Modal } from '@/shared/design/Modal'
 import { SuggestionCombobox } from '@/shared/design/SuggestionCombobox'
-import { updateVideoTags, type Video } from './catalog'
+import { deleteVideo, updateVideoTags, type Video } from './catalog'
 import { useCatalog } from './CatalogProvider'
 import { useAlbumSuggestions, useCreatorSuggestions } from './catalogSuggestion'
 
@@ -24,6 +24,8 @@ function EditVideoForm({ video, onClose }: { video: Video; onClose: () => void }
   const [creator, setCreator] = useState(() => authorById(video.authorId).name)
   const [album, setAlbum] = useState(() => albumById(video.albumId).title)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [error, setError] = useState('')
   const ids = {
     heading: useId(),
@@ -34,7 +36,8 @@ function EditVideoForm({ video, onClose }: { video: Video; onClose: () => void }
     albumList: useId(),
   }
 
-  const canSave = !!title.trim() && !!creator.trim() && !!album.trim() && !saving
+  const busy = saving || deleting
+  const canSave = !!title.trim() && !!creator.trim() && !!album.trim() && !busy
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,6 +51,22 @@ function EditVideoForm({ video, onClose }: { video: Video; onClose: () => void }
     } catch (saveError) {
       setError(saveError instanceof ApiError && saveError.status === 409 ? t.videoInUse : t.saveFailed)
       setSaving(false)
+    }
+  }
+
+  // First click only arms the button: deletion removes the file from disk and cannot be undone
+  const remove = async () => {
+    if (!confirmingDelete) return setConfirmingDelete(true)
+    setError('')
+    setDeleting(true)
+    try {
+      await deleteVideo(video.id)
+      await refresh()
+      onClose()
+    } catch (deleteError) {
+      setError(deleteError instanceof ApiError && deleteError.status === 409 ? t.videoInUseDelete : t.deleteFailed)
+      setDeleting(false)
+      setConfirmingDelete(false)
     }
   }
 
@@ -108,6 +127,19 @@ function EditVideoForm({ video, onClose }: { video: Video; onClose: () => void }
           </button>
           <button type="submit" disabled={!canSave} className="button-primary min-w-20">
             {saving ? <SpinnerIcon className="h-4 w-4" /> : t.save}
+          </button>
+        </div>
+
+        <div className="border-t border-border/70 px-6 py-4">
+          <button
+            type="button"
+            onClick={remove}
+            disabled={busy}
+            className={`flex h-10 w-full items-center justify-center rounded-xl text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+              confirmingDelete ? 'bg-red-500 text-white hover:bg-red-600' : 'text-red-500 hover:bg-red-50'
+            }`}
+          >
+            {deleting ? <SpinnerIcon className="h-4 w-4" /> : confirmingDelete ? t.confirmDeleteVideo : t.deleteVideo}
           </button>
         </div>
       </form>

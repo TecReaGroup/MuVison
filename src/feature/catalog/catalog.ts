@@ -21,6 +21,9 @@ export const fetchCatalog = (signal?: AbortSignal) => requestJson<Catalog>(CATAL
 /** Rewrites the tags inside the video file; the catalog must be refreshed to see the result. */
 export const updateVideoTags = (videoId: string, tag: VideoTagInput) => patchJson<void>(`/api/video/${videoId}`, tag)
 
+/** Deletes the video file from the library permanently. */
+export const deleteVideo = (videoId: string) => requestJson<void>(`/api/video/${videoId}`, { method: 'DELETE' })
+
 /** Formats seconds as m:ss, or h:mm:ss once past an hour. */
 export function formatDuration(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds))

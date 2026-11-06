@@ -2,19 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import type { Video } from '@/feature/catalog/catalog'
 import { CatalogPage, type CatalogSection } from '@/feature/catalog/CatalogPage'
+import { useCatalog } from '@/feature/catalog/CatalogProvider'
 import { AuthorDetail } from '@/feature/catalog/AuthorDetail'
 import { AlbumDetail } from '@/feature/catalog/AlbumDetail'
 import WatchPage from '@/feature/watch/WatchPage'
 import SubmitDialog from '@/feature/submission/SubmitDialog'
 import { LanguageSwitch } from '@/shared/i18n/LanguageSwitch'
 import { useI18n } from '@/shared/i18n/I18nProvider'
-import { AlbumIcon, CloseIcon, LogoMark, PlusIcon, SearchIcon, UserIcon, VideoIcon } from '@/shared/design/icon'
+import { AlbumIcon, CloseIcon, LogoMark, PlusIcon, PlusSquareIcon, SearchIcon, UserIcon, VideoIcon } from '@/shared/design/icon'
 import { SPRING } from '@/shared/design/motion'
 import { useScrollActivity } from '@/shared/design/useScrollActivity'
+import { HOME_ROUTE, useRouter } from './router'
 
 type Section = CatalogSection
-type Detail = { type: 'album' | 'author'; id: string } | null
-type View = { section: Section; detail: Detail; watching: Video | null }
 
 const NAVIGATION: { key: Section; label: 'navVideos' | 'navAlbums' | 'navAuthors'; Icon: typeof VideoIcon }[] = [
   { key: 'videos', label: 'navVideos', Icon: VideoIcon },
@@ -23,57 +23,49 @@ const NAVIGATION: { key: Section; label: 'navVideos' | 'navAlbums' | 'navAuthors
 ]
 
 export default function App() {
-  const [view, setView] = useState<View>({ section: 'videos', detail: null, watching: null })
-  // Views visited before the current one, so "back" returns to where the user came from
-  const [history, setHistory] = useState<View[]>([])
+  const { route, previous, push, replace, back } = useRouter()
+  const { videos, albums, authors } = useCatalog()
   const [query, setQuery] = useState('')
   const [submitOpen, setSubmitOpen] = useState(false)
   const [mobileSearch, setMobileSearch] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
   const mainScroll = useScrollActivity()
   const { t } = useI18n()
-  const { section, detail, watching } = view
 
-  const push = (next: View) => {
-    setHistory((h) => [...h, view])
-    setView(next)
-  }
-  const back = () => {
-    const prev = history[history.length - 1]
-    if (prev) {
-      setHistory((h) => h.slice(0, -1))
-      setView(prev)
-    } else {
-      // No history (e.g. fresh load): fall back to the parent list
-      setView({ section, detail: watching ? detail : null, watching: null })
-    }
-  }
+  // URLs can point at videos that were deleted or links that were mistyped; those land on home instead
+  const routeVideo = route.videoId ? videos.find((v) => v.id === route.videoId) : null
+  const routeDetail = route.detail
+  const routeIsKnown =
+    routeVideo !== undefined &&
+    (!routeDetail || (routeDetail.type === 'album' ? albums : authors).some((item) => item.id === routeDetail.id))
+  const { section, detail } = routeIsKnown ? route : HOME_ROUTE
+  const watching = routeIsKnown ? routeVideo : null
+
+  useEffect(() => {
+    if (!routeIsKnown) replace(HOME_ROUTE)
+  }, [routeIsKnown])
 
   const closeSubmit = useCallback(() => setSubmitOpen(false), [])
 
-  const go = (s: Section) => {
-    setHistory([])
-    setView({ section: s, detail: null, watching: null })
-  }
-  const openAuthor = (id: string) => push({ section: 'authors', detail: { type: 'author', id }, watching: null })
-  const openAlbum = (id: string) => push({ section: 'albums', detail: { type: 'album', id }, watching: null })
-  // Switching videos replaces the current entry instead of stacking history.
-  const play = (v: Video) => (watching ? setView({ ...view, watching: v }) : push({ ...view, watching: v }))
+  const go = (s: Section) => push({ section: s, detail: null, videoId: null })
+  const openAuthor = (id: string) => push({ section: 'authors', detail: { type: 'author', id }, videoId: null })
+  const openAlbum = (id: string) => push({ section: 'albums', detail: { type: 'album', id }, videoId: null })
+  // Switching videos replaces the current entry instead of stacking history
+  const play = (v: Video) => (watching ? replace : push)({ section, detail, videoId: v.id })
 
   // Searching from a detail or watch page jumps to the matching list so results are visible
   const onSearch = (value: string) => {
     setQuery(value)
     if (value.trim() && (watching || detail))
-      push({ section: watching ? 'videos' : section, detail: null, watching: null })
+      push({ section: watching ? 'videos' : section, detail: null, videoId: null })
   }
   const closeMobileSearch = () => {
     setMobileSearch(false)
     setQuery('')
   }
 
-  const prevView = history[history.length - 1]
   const detailBackLabel = detail
-    ? prevView?.watching
+    ? previous?.videoId
       ? t.back
       : t.backTo(detail.type === 'author' ? t.navAuthors : t.navAlbums)
     : ''
@@ -286,11 +278,9 @@ export default function App() {
           })}
           <button
             onClick={() => setSubmitOpen(true)}
-            className="flex h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium text-subtle"
+            className="flex h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium text-subtle transition-colors"
           >
-            <span className="flex h-[22px] w-8 items-center justify-center rounded-lg bg-stone-200/70 text-secondary">
-              <PlusIcon className="h-4 w-4" />
-            </span>
+            <PlusSquareIcon className="h-[22px] w-[22px]" />
             {t.submit}
           </button>
         </nav>

@@ -69,6 +69,11 @@ export function registerCatalogRoutes(
     },
   )
 
+  app.delete<VideoParams>('/api/video/:videoId', async (request, reply) => {
+    await library.remove(requireVideo(request.params.videoId))
+    return reply.status(204).send()
+  })
+
   app.get<CreatorParams>('/api/creator/:authorId/photo', (request, reply) => {
     const { authorId } = request.params
     const creator = library

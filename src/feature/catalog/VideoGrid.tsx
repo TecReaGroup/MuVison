@@ -6,12 +6,13 @@ import { EditVideoDialog } from './EditVideoDialog'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { PencilIcon, PlayIcon } from '@/shared/design/icon'
 import { GRID_ITEM } from '@/shared/design/motion'
+import { useLongPress } from '@/shared/design/useLongPress'
 
 export function VideoGrid({
   items,
   onPlay,
   onAuthor,
-  className = 'grid grid-cols-1 gap-x-6 gap-y-7 sm:grid-cols-2 md:gap-y-9 xl:grid-cols-3 2xl:grid-cols-4',
+  className = 'grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-6 sm:gap-y-7 md:gap-y-9 xl:grid-cols-3 2xl:grid-cols-4',
 }: {
   items: Video[]
   onPlay: (v: Video) => void
@@ -47,8 +48,10 @@ function VideoCard({
 }) {
   const author = useCatalog().authorById(video.authorId)
   const { t } = useI18n()
+  const longPress = useLongPress(() => onEdit(video))
   return (
-    <article className="group">
+    // Touch screens have no hover to reveal the edit button, so a long press opens the editor there
+    <article {...longPress} className="group select-none [-webkit-touch-callout:none]">
       {/* Edit sits beside the play surface, not inside it: buttons cannot nest */}
       <div className="relative">
         <button
@@ -72,24 +75,23 @@ function VideoCard({
             {formatDuration(video.durationSeconds)}
           </span>
         </button>
-        {/* Hover reveals it; touch screens have no hover, so it stays visible there */}
         <button
           onClick={() => onEdit(video)}
           aria-label={t.editVideo}
           title={t.editVideo}
-          className="absolute right-2.5 top-2.5 flex h-8 w-8 -translate-y-1 items-center justify-center rounded-full bg-surface/85 text-stone-600 opacity-0 shadow-[0_4px_12px_-4px_rgba(0,0,0,0.3)] ring-1 ring-black/5 backdrop-blur transition-[opacity,transform,background-color,color] duration-200 ease-out hover:bg-surface hover:text-foreground focus-visible:translate-y-0 focus-visible:opacity-100 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:none)]:translate-y-0 [@media(hover:none)]:opacity-100"
+          className="absolute right-2.5 top-2.5 flex h-8 w-8 -translate-y-1 items-center justify-center rounded-full bg-surface/85 text-stone-600 opacity-0 shadow-[0_4px_12px_-4px_rgba(0,0,0,0.3)] ring-1 ring-black/5 backdrop-blur transition-[opacity,transform,background-color,color] duration-200 ease-out hover:bg-surface hover:text-foreground focus-visible:translate-y-0 focus-visible:opacity-100 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:none)]:hidden"
         >
           <PencilIcon className="h-[15px] w-[15px]" />
         </button>
       </div>
-      <button onClick={() => onPlay(video)} className="mt-3 block text-left">
-        <h3 className="line-clamp-1 text-[15px] font-medium leading-snug text-foreground transition-colors duration-200 group-hover:text-secondary">
+      <button onClick={() => onPlay(video)} className="mt-2 block text-left sm:mt-3">
+        <h3 className="line-clamp-1 text-sm font-medium sm:text-[15px] leading-snug text-foreground transition-colors duration-200 group-hover:text-secondary">
           {video.title}
         </h3>
       </button>
       <button
         onClick={() => onAuthor(author.id)}
-        className="mt-1 text-sm text-muted transition-colors duration-300 hover:text-foreground"
+        className="mt-0.5 text-xs text-muted transition-colors sm:mt-1 sm:text-sm duration-300 hover:text-foreground"
       >
         {author.name}
       </button>

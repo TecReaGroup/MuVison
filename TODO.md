@@ -7,5 +7,6 @@
 - [x] 视频元数据编辑，播放按钮丑
 - [x] 登录密码
 - [x] docker 部署，comopse 写明 metube_url password 字段，然后默认为 host 网络模式
-- [ ] edit video 最下面添加删除按钮，就是删除这个视频
-- [ ] 手机端 submit 按钮，视频 albums 两个一行
+- [x] edit video 最下面添加删除按钮，就是删除这个视频
+- [x] 手机端 submit 按钮，视频 albums 两个一行
+- [x] 路由地址优化

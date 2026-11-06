@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { promisify } from 'node:util'
-import { moveFile } from '../../shared/fileSystem'
+import { FILE_IN_USE_CODES, moveFile } from '../../shared/fileSystem'
 import { HttpError } from '../../shared/httpError'
 import type { LibraryVideo } from './library'
 import { readCover } from './metadata'
@@ -12,8 +12,6 @@ const execFileAsync = promisify(execFile)
 
 // The writer always produces the MP4 container, so only files already in it can be rewritten in place
 const RETAGGABLE_EXTENSIONS = new Set(['.mp4', '.m4v', '.mov'])
-// Windows refuses to replace a file another handle has open, e.g. while it is being streamed
-const FILE_IN_USE_CODES = new Set(['EBUSY', 'EPERM', 'EACCES'])
 
 export type VideoTagInput = { title: string; creator: string; album: string }
 

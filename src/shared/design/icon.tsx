@@ -107,6 +107,12 @@ export const PlusIcon = ({ className }: IconProps) => (
     <path d="M12 5v14M5 12h14" />
   </svg>
 )
+export const PlusSquareIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <rect x="3" y="3" width="18" height="18" rx="5" />
+    <path d="M12 8.5v7M8.5 12h7" />
+  </svg>
+)
 export const LinkIcon = ({ className }: IconProps) => (
   <svg {...ICON_STROKE} className={className}>
     <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1" />

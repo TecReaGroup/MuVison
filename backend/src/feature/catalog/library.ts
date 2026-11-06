@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
-import { readdir } from 'node:fs/promises'
+import { readdir, rm } from 'node:fs/promises'
 import { extname, join } from 'node:path'
+import { FILE_IN_USE_CODES } from '../../shared/fileSystem'
+import { HttpError } from '../../shared/httpError'
 import { createLogger } from '../../shared/log'
 import { readVideoTag, VIDEO_EXTENSIONS, type VideoTag } from './metadata'
 
@@ -61,5 +63,17 @@ export class VideoLibrary {
 
   find(videoId: string): LibraryVideo | undefined {
     return this.#videos.get(videoId)
+  }
+
+  /** Deletes the video file from disk and drops it from the index. */
+  async remove(video: LibraryVideo): Promise<void> {
+    await rm(video.absolutePath).catch((error: NodeJS.ErrnoException) => {
+      if (FILE_IN_USE_CODES.has(error.code ?? '')) {
+        throw new HttpError(409, `Video file is in use, stop playing it and retry: ${video.relativePath}`)
+      }
+      throw error
+    })
+    this.#videos.delete(video.id)
+    log.info(`Deleted ${video.relativePath}`)
   }
 }

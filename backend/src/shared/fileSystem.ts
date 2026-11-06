@@ -10,3 +10,6 @@ export async function moveFile(source: string, destination: string): Promise<voi
     await rm(source)
   }
 }
+
+// Windows refuses to replace or delete a file another handle has open, e.g. while it is being streamed
+export const FILE_IN_USE_CODES = new Set(['EBUSY', 'EPERM', 'EACCES'])
