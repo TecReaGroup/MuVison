@@ -29,6 +29,8 @@ export type AppConfig = {
   submission: SubmissionConfig
   ffmpegPath: string
   logLevel: LogLevel
+  password: string
+  sessionMaxAgeMs: number
 }
 
 type RawConfig = {
@@ -37,6 +39,7 @@ type RawConfig = {
   submission: { quality: string; download_timeout_seconds: number; poll_interval_seconds: number }
   tool: { ffmpeg_path: string }
   log: { level: string }
+  auth: { session_days: number }
 }
 
 function requireOneOf<T extends string>(value: string, options: readonly T[], key: string): T {
@@ -50,6 +53,8 @@ export async function loadConfig(path = CONFIG_PATH): Promise<AppConfig> {
   if (existsSync(ENV_PATH)) process.loadEnvFile(ENV_PATH)
   const metubeUrl = process.env.metube_url?.trim()
   if (!metubeUrl) throw new Error(`metube_url is not set; add it to ${ENV_PATH}`)
+  const password = process.env.password
+  if (!password) throw new Error(`password is not set; add it to ${ENV_PATH}`)
 
   const raw = parse(await readFile(path, 'utf-8')) as RawConfig
   return {
@@ -65,5 +70,7 @@ export async function loadConfig(path = CONFIG_PATH): Promise<AppConfig> {
     },
     ffmpegPath: raw.tool.ffmpeg_path,
     logLevel: requireOneOf(raw.log.level.toUpperCase(), LOG_LEVELS, 'log.level'),
+    password,
+    sessionMaxAgeMs: raw.auth.session_days * 24 * 60 * 60 * 1000,
   }
 }

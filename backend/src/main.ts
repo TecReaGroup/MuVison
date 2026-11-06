@@ -1,6 +1,8 @@
 import { join } from 'node:path'
 import Fastify, { type FastifyError } from 'fastify'
 import fastifyStatic from '@fastify/static'
+import { PasswordGate } from './feature/auth/passwordGate'
+import { registerAuthRoutes } from './feature/auth/route'
 import { CreatorPhotoStore } from './feature/catalog/creatorPhoto'
 import { VideoLibrary } from './feature/catalog/library'
 import { VideoTagWriter } from './feature/catalog/videoTagWriter'
@@ -33,6 +35,7 @@ const submissionQueue = new SubmissionQueue(
 // Fastify's pino logger is off so every line follows the project log format
 const app = Fastify({ logger: false })
 await app.register(fastifyStatic, { root: config.videoDir, serve: false })
+registerAuthRoutes(app, new PasswordGate(config.password, config.sessionMaxAgeMs))
 registerCatalogRoutes(app, library, creatorPhotos, tagWriter)
 registerSubmissionRoutes(app, submissionQueue)
 

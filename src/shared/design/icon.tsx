@@ -159,3 +159,22 @@ export const SpinnerIcon = ({ className }: IconProps) => (
     <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
   </svg>
 )
+export const LockIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
+    <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+  </svg>
+)
+export const EyeIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+)
+export const EyeOffIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <path d="M10.6 5.6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.6 6.6A16.6 16.6 0 0 0 2.5 12S6 18.5 12 18.5a9.3 9.3 0 0 0 5.4-1.7" />
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    <path d="m3 3 18 18" />
+  </svg>
+)
