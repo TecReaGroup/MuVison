@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { formatDuration, type Video } from './catalog'
+import { formatDuration, type Author, type Video } from './catalog'
 import { useCatalog } from './CatalogProvider'
 import { EditVideoDialog } from './EditVideoDialog'
 import { useI18n } from '@/shared/i18n/I18nProvider'
@@ -19,14 +19,23 @@ export function VideoGrid({
   onAuthor: (id: string) => void
   className?: string
 }) {
+  const { authorById } = useCatalog()
   const [editing, setEditing] = useState<Video | null>(null)
   const closeEditor = useCallback(() => setEditing(null), [])
   return (
     <div className={className}>
       <AnimatePresence mode="popLayout">
         {items.map((v) => (
+          // Author is resolved here, not in the card: an exiting card keeps its last props but would re-read a
+          // catalog where a deleted or retagged video's author may no longer exist
           <motion.div key={v.id} {...GRID_ITEM}>
-            <VideoCard video={v} onPlay={onPlay} onAuthor={onAuthor} onEdit={setEditing} />
+            <VideoCard
+              video={v}
+              author={authorById(v.authorId)}
+              onPlay={onPlay}
+              onAuthor={onAuthor}
+              onEdit={setEditing}
+            />
           </motion.div>
         ))}
       </AnimatePresence>
@@ -37,16 +46,17 @@ export function VideoGrid({
 
 function VideoCard({
   video,
+  author,
   onPlay,
   onAuthor,
   onEdit,
 }: {
   video: Video
+  author: Author
   onPlay: (v: Video) => void
   onAuthor: (id: string) => void
   onEdit: (v: Video) => void
 }) {
-  const author = useCatalog().authorById(video.authorId)
   const { t } = useI18n()
   const longPress = useLongPress(() => onEdit(video))
   return (
