@@ -6,6 +6,8 @@ import type { ReadableStream } from 'node:stream/web'
 const REQUEST_TIMEOUT_MS = 15_000
 // Tag writing relies on an MP4 container, so this is not configurable
 const DOWNLOAD_FORMAT = 'mp4'
+// iOS Safari cannot decode AV1/VP9 on most devices; anything else gets transcoded after download
+const DOWNLOAD_VIDEO_CODEC = 'h264'
 
 /** One entry of MeTube's /history; `id` is the YouTube video id, `url` is MeTube's key for /delete. */
 export type MetubeDownload = {
@@ -33,11 +35,12 @@ export class MetubeClient {
   }
 
   async add(url: string): Promise<void> {
-    // The legacy {quality, format} body is accepted by both old and current MeTube releases
+    // The legacy {quality, format, video_codec} body is accepted by both old and current MeTube releases
     const reply = await this.#post<{ status: string; msg?: string }>('/add', {
       url,
       quality: this.#quality,
       format: DOWNLOAD_FORMAT,
+      video_codec: DOWNLOAD_VIDEO_CODEC,
     })
     if (reply.status !== 'ok') throw new Error(`MeTube rejected ${url}: ${reply.msg ?? reply.status}`)
   }

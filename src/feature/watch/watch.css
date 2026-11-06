@@ -18,3 +18,19 @@
     max-width: clamp(640px, var(--player-w), 1100px);
   }
 }
+
+/* Phone turned sideways: the player covers the screen like a landscape fullscreen.
+   iOS Safari cannot lock orientation, so following the device rotation is the only landscape path there.
+   Unlayered on purpose: it must beat the skin's and Tailwind's @layer rules (aspect-video, radius, shadow). */
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) {
+  .watch-player {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    width: 100vw;
+    height: 100dvh;
+    aspect-ratio: auto;
+    box-shadow: none;
+    --media-border-radius: 0;
+  }
+}

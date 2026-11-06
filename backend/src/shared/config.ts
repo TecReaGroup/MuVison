@@ -29,6 +29,7 @@ export type AppConfig = {
   webDistDir: string
   submission: SubmissionConfig
   ffmpegPath: string
+  ffprobePath: string
   logLevel: LogLevel
   password: string
   sessionMaxAgeMs: number
@@ -39,7 +40,7 @@ type RawConfig = {
   library: { video_dir: string; creator_photo_dir: string }
   web: { dist_dir: string }
   submission: { quality: string; download_timeout_seconds: number; poll_interval_seconds: number }
-  tool: { ffmpeg_path: string }
+  tool: { ffmpeg_path: string; ffprobe_path: string }
   log: { level: string }
   auth: { session_days: number }
 }
@@ -72,6 +73,7 @@ export async function loadConfig(path = CONFIG_PATH): Promise<AppConfig> {
       pollIntervalMs: raw.submission.poll_interval_seconds * 1000,
     },
     ffmpegPath: raw.tool.ffmpeg_path,
+    ffprobePath: raw.tool.ffprobe_path,
     logLevel: requireOneOf(raw.log.level.toUpperCase(), LOG_LEVELS, 'log.level'),
     password,
     sessionMaxAgeMs: raw.auth.session_days * 24 * 60 * 60 * 1000,

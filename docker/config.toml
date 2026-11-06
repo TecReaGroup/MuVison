@@ -24,8 +24,10 @@ poll_interval_seconds = 2
 session_days = 30
 
 [tool]
-# ffmpeg executable used to write title/creator/album and the cover; a bare name is looked up on PATH
+# ffmpeg executable used to write title/creator/album and the cover and to transcode to H.264; a bare name is looked up on PATH
 ffmpeg_path = "ffmpeg"
+# ffprobe executable used to detect video codecs; a bare name is looked up on PATH
+ffprobe_path = "ffprobe"
 
 [log]
 # Options: DEBUG, INFO, WARN, ERROR

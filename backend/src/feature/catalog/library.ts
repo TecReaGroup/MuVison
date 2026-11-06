@@ -11,6 +11,15 @@ const log = createLogger('catalog')
 export const stableId = (...parts: string[]) =>
   createHash('sha1').update(parts.join('\0')).digest('hex').slice(0, STABLE_ID_LENGTH)
 
+/** Video files under `videoDir` as sorted POSIX paths relative to it. */
+export async function listVideoFiles(videoDir: string): Promise<string[]> {
+  const entries = await readdir(videoDir, { recursive: true })
+  return entries
+    .map((entry) => entry.replaceAll('\\', '/'))
+    .filter((entry) => VIDEO_EXTENSIONS.has(extname(entry).toLowerCase()))
+    .sort()
+}
+
 export type LibraryVideo = {
   id: string
   /** POSIX path relative to the video directory */
@@ -29,14 +38,8 @@ export class VideoLibrary {
   }
 
   async scan(): Promise<LibraryVideo[]> {
-    const entries = await readdir(this.videoDir, { recursive: true })
-    const relativePaths = entries
-      .map((entry) => entry.replaceAll('\\', '/'))
-      .filter((entry) => VIDEO_EXTENSIONS.has(extname(entry).toLowerCase()))
-      .sort()
-
     const videos = new Map<string, LibraryVideo>()
-    for (const relativePath of relativePaths) {
+    for (const relativePath of await listVideoFiles(this.videoDir)) {
       const absolutePath = join(this.videoDir, relativePath)
       try {
         const video = { id: stableId(relativePath), relativePath, absolutePath, tag: await readVideoTag(absolutePath) }

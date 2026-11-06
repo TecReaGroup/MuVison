@@ -75,44 +75,10 @@ export const LogoMark = ({ className }: IconProps) => (
   </svg>
 )
 
-export const PauseIcon = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <rect x="6" y="5" width="4" height="14" rx="1.2" />
-    <rect x="14" y="5" width="4" height="14" rx="1.2" />
-  </svg>
-)
-export const VolumeIcon = ({ className }: IconProps) => (
-  <svg {...ICON_STROKE} className={className}>
-    <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" />
-    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
-  </svg>
-)
-export const MuteIcon = ({ className }: IconProps) => (
-  <svg {...ICON_STROKE} className={className}>
-    <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" />
-    <path d="m16 9.5 5 5m0-5-5 5" />
-  </svg>
-)
-export const ExpandIcon = ({ className }: IconProps) => (
-  <svg {...ICON_STROKE} className={className}>
-    <path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15" />
-  </svg>
-)
-export const CollapseIcon = ({ className }: IconProps) => (
-  <svg {...ICON_STROKE} className={className}>
-    <path d="M9 4v3.5A1.5 1.5 0 0 1 7.5 9H4M20 9h-3.5A1.5 1.5 0 0 1 15 7.5V4M15 20v-3.5a1.5 1.5 0 0 1 1.5-1.5H20M4 15h3.5A1.5 1.5 0 0 1 9 16.5V20" />
-  </svg>
-)
 export const ReplayIcon = ({ className }: IconProps) => (
   <svg {...ICON_STROKE} className={className}>
     <path d="M4 12a8 8 0 1 0 2.4-5.7" />
     <path d="M4 4v4.5h4.5" />
-  </svg>
-)
-export const NextIcon = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M5 6.2v11.6a.8.8 0 0 0 1.24.66L14.5 13a1.2 1.2 0 0 0 0-2L6.24 5.54A.8.8 0 0 0 5 6.2z" />
-    <rect x="16.5" y="5" width="2.5" height="14" rx="1" />
   </svg>
 )
 export const ArrowRightIcon = ({ className }: IconProps) => (
