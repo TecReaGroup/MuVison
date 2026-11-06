@@ -33,9 +33,19 @@ export const UserIcon = ({ className }: IconProps) => (
     <path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5" />
   </svg>
 )
+// Optically centered: the outline sits 1px right of center and the centroid 1px left, so the triangle's
+// visual mass lands in the middle. Callers must not nudge it. The matching stroke rounds the corners.
 export const PlayIcon = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" />
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M7 4.8v14.4L19 12z" />
   </svg>
 )
 export const CloseIcon = ({ className }: IconProps) => (
@@ -135,6 +145,12 @@ export const LinkIcon = ({ className }: IconProps) => (
   <svg {...ICON_STROKE} className={className}>
     <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1" />
     <path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />
+  </svg>
+)
+export const PencilIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <path d="M12 20h8" />
+    <path d="M16.4 3.6a2.12 2.12 0 0 1 3 3L7.5 18.5 4 19.5l1-3.5z" />
   </svg>
 )
 export const SpinnerIcon = ({ className }: IconProps) => (

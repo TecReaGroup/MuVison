@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { Video } from './catalog'
 import { useCatalog } from './CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
@@ -13,10 +14,15 @@ type DetailProps = {
 }
 
 export function AuthorDetail({ id, backLabel, onBack, onPlay, onAuthor }: DetailProps) {
-  const { videos, authorById } = useCatalog()
-  const author = authorById(id)
+  const { videos, authors } = useCatalog()
+  // An edit can move this author's last video away, after which the page has nothing to show
+  const author = authors.find((candidate) => candidate.id === id)
   const items = videos.filter((video) => video.authorId === id)
   const { t } = useI18n()
+  useEffect(() => {
+    if (!author) onBack()
+  }, [author, onBack])
+  if (!author) return null
   return (
     <div>
       <button

@@ -14,8 +14,13 @@ export async function requestJson<T>(url: string, init?: RequestInit): Promise<T
     const body = (await response.json().catch(() => null)) as { error?: string } | null
     throw new ApiError(response.status, body?.error ?? `${init?.method ?? 'GET'} ${url} failed: ${response.status}`)
   }
-  return response.json()
+  // 204 carries no body to parse
+  return response.status === 204 ? (undefined as T) : response.json()
 }
 
-export const postJson = <T>(url: string, body: unknown) =>
-  requestJson<T>(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+const sendJson = <T>(method: 'POST' | 'PATCH', url: string, body: unknown) =>
+  requestJson<T>(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+
+export const postJson = <T>(url: string, body: unknown) => sendJson<T>('POST', url, body)
+
+export const patchJson = <T>(url: string, body: unknown) => sendJson<T>('PATCH', url, body)

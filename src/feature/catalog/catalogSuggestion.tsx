@@ -1,6 +1,6 @@
-import { useCatalog } from '@/feature/catalog/CatalogProvider'
+import { useCatalog } from './CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
-import type { Suggestion } from './SuggestionCombobox'
+import type { Suggestion } from '@/shared/design/SuggestionCombobox'
 
 export function useAlbumSuggestions(): Suggestion[] {
   const { t } = useI18n()

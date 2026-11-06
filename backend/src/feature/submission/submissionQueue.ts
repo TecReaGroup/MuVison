@@ -1,15 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import { copyFile, mkdir, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { SubmissionConfig } from '../../shared/config'
 import { toFileStem } from '../../shared/fileName'
+import { moveFile } from '../../shared/fileSystem'
 import { HttpError } from '../../shared/httpError'
 import { createLogger } from '../../shared/log'
 import type { CreatorPhotoStore } from '../catalog/creatorPhoto'
+import type { VideoTagInput, VideoTagWriter } from '../catalog/videoTagWriter'
 import type { MetubeClient, MetubeDownload } from './metubeClient'
-import { writeTaggedVideo, type VideoTagInput } from './videoTagWriter'
 import { canonicalWatchUrl, fetchChannelAvatarUrl, thumbnailUrls } from './youtube'
 
 const IMAGE_TIMEOUT_MS = 15_000
@@ -43,6 +44,7 @@ export class SubmissionQueue {
   readonly #config: SubmissionConfig
   readonly #videoDir: string
   readonly #photos: CreatorPhotoStore
+  readonly #tagWriter: VideoTagWriter
   readonly #workDir: string
 
   constructor(
@@ -50,12 +52,14 @@ export class SubmissionQueue {
     config: SubmissionConfig,
     videoDir: string,
     photos: CreatorPhotoStore,
+    tagWriter: VideoTagWriter,
     workDir: string,
   ) {
     this.#metube = metube
     this.#config = config
     this.#videoDir = videoDir
     this.#photos = photos
+    this.#tagWriter = tagWriter
     this.#workDir = workDir
   }
 
@@ -93,7 +97,7 @@ export class SubmissionQueue {
       job.percent = null
       const cover = await this.#fetchCover(request.videoId, join(jobDir, 'cover.jpg'))
       const tagged = join(jobDir, 'tagged.mp4')
-      await writeTaggedVideo(this.#config.ffmpegPath, { source: downloaded, cover, destination: tagged, tag: request })
+      await this.#tagWriter.write({ source: downloaded, cover, destination: tagged, tag: request })
       const saved = this.#libraryPathFor(request)
       await moveFile(tagged, saved)
       await this.#ensureCreatorPhoto(request)
@@ -173,16 +177,5 @@ export class SubmissionQueue {
     const baseName = toFileStem(title) || videoId
     const preferred = join(this.#videoDir, `${baseName}.mp4`)
     return existsSync(preferred) ? join(this.#videoDir, `${baseName} [${videoId}].mp4`) : preferred
-  }
-}
-
-async function moveFile(source: string, destination: string): Promise<void> {
-  try {
-    await rename(source, destination)
-  } catch (error) {
-    // rename cannot cross drives; video_dir may live on another one
-    if ((error as NodeJS.ErrnoException).code !== 'EXDEV') throw error
-    await copyFile(source, destination)
-    await rm(source)
   }
 }

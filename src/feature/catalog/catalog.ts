@@ -1,4 +1,4 @@
-import { requestJson } from '@/shared/http/requestJson'
+import { patchJson, requestJson } from '@/shared/http/requestJson'
 
 const CATALOG_URL = '/api/catalog'
 
@@ -14,8 +14,12 @@ export type Video = {
   durationSeconds: number
 }
 export type Catalog = { authors: Author[]; albums: Album[]; videos: Video[] }
+export type VideoTagInput = { title: string; creator: string; album: string }
 
 export const fetchCatalog = (signal?: AbortSignal) => requestJson<Catalog>(CATALOG_URL, { signal })
+
+/** Rewrites the tags inside the video file; the catalog must be refreshed to see the result. */
+export const updateVideoTags = (videoId: string, tag: VideoTagInput) => patchJson<void>(`/api/video/${videoId}`, tag)
 
 /** Formats seconds as m:ss, or h:mm:ss once past an hour. */
 export function formatDuration(seconds: number): string {

@@ -3,6 +3,7 @@ import Fastify, { type FastifyError } from 'fastify'
 import fastifyStatic from '@fastify/static'
 import { CreatorPhotoStore } from './feature/catalog/creatorPhoto'
 import { VideoLibrary } from './feature/catalog/library'
+import { VideoTagWriter } from './feature/catalog/videoTagWriter'
 import { registerCatalogRoutes } from './feature/catalog/route'
 import { MetubeClient } from './feature/submission/metubeClient'
 import { registerSubmissionRoutes } from './feature/submission/route'
@@ -17,6 +18,7 @@ const log = createLogger('server')
 const library = new VideoLibrary(config.videoDir)
 await library.scan()
 const creatorPhotos = new CreatorPhotoStore(config.creatorPhotoDir)
+const tagWriter = new VideoTagWriter(config.ffmpegPath, join(TEMP_DIR, 'retag'))
 
 const metube = new MetubeClient(config.submission.metubeUrl, config.submission.quality)
 const submissionQueue = new SubmissionQueue(
@@ -24,13 +26,14 @@ const submissionQueue = new SubmissionQueue(
   config.submission,
   config.videoDir,
   creatorPhotos,
+  tagWriter,
   join(TEMP_DIR, 'submission'),
 )
 
 // Fastify's pino logger is off so every line follows the project log format
 const app = Fastify({ logger: false })
 await app.register(fastifyStatic, { root: config.videoDir, serve: false })
-registerCatalogRoutes(app, library, creatorPhotos)
+registerCatalogRoutes(app, library, creatorPhotos, tagWriter)
 registerSubmissionRoutes(app, submissionQueue)
 
 app.addHook('onResponse', async (request, reply) => {

@@ -19,7 +19,6 @@ export type SubmissionConfig = {
   quality: string
   downloadTimeoutMs: number
   pollIntervalMs: number
-  ffmpegPath: string
 }
 
 export type AppConfig = {
@@ -28,13 +27,15 @@ export type AppConfig = {
   videoDir: string
   creatorPhotoDir: string
   submission: SubmissionConfig
+  ffmpegPath: string
   logLevel: LogLevel
 }
 
 type RawConfig = {
   server: { host: string; port: number }
   library: { video_dir: string; creator_photo_dir: string }
-  submission: { quality: string; download_timeout_seconds: number; poll_interval_seconds: number; ffmpeg_path: string }
+  submission: { quality: string; download_timeout_seconds: number; poll_interval_seconds: number }
+  tool: { ffmpeg_path: string }
   log: { level: string }
 }
 
@@ -61,8 +62,8 @@ export async function loadConfig(path = CONFIG_PATH): Promise<AppConfig> {
       quality: requireOneOf(raw.submission.quality, METUBE_QUALITIES, 'submission.quality'),
       downloadTimeoutMs: raw.submission.download_timeout_seconds * 1000,
       pollIntervalMs: raw.submission.poll_interval_seconds * 1000,
-      ffmpegPath: raw.submission.ffmpeg_path,
     },
+    ffmpegPath: raw.tool.ffmpeg_path,
     logLevel: requireOneOf(raw.log.level.toUpperCase(), LOG_LEVELS, 'log.level'),
   }
 }

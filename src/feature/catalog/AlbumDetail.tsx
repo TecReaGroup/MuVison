@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { Video } from './catalog'
 import { useCatalog } from './CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
@@ -13,10 +14,15 @@ type DetailProps = {
 }
 
 export function AlbumDetail({ id, backLabel, onBack, onPlay, onAuthor }: DetailProps) {
-  const { videos, albumById } = useCatalog()
-  const album = albumById(id)
+  const { videos, albums } = useCatalog()
+  // An edit can move this album's last video away, after which the page has nothing to show
+  const album = albums.find((candidate) => candidate.id === id)
   const items = videos.filter((video) => video.albumId === id)
   const { t } = useI18n()
+  useEffect(() => {
+    if (!album) onBack()
+  }, [album, onBack])
+  if (!album) return null
   return (
     <div>
       <button

@@ -14,6 +14,8 @@ quality = "best"
 # How long to wait for MeTube to finish one download before giving up
 download_timeout_seconds = 300
 poll_interval_seconds = 2
+
+[tool]
 # ffmpeg executable used to write title/creator/album and the cover; a bare name is looked up on PATH
 ffmpeg_path = "ffmpeg"
 

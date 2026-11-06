@@ -195,7 +195,7 @@ export function VideoPlayer({
             transition={{ duration: 0.4, ease: EASE }}
             className="pointer-events-none absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white"
           >
-            {flash === 'play' ? <PlayIcon className="h-7 w-7 translate-x-0.5" /> : <PauseIcon className="h-7 w-7" />}
+            {flash === 'play' ? <PlayIcon className="h-7 w-7" /> : <PauseIcon className="h-7 w-7" />}
           </motion.span>
         )}
       </AnimatePresence>
@@ -209,7 +209,7 @@ export function VideoPlayer({
             className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/50 via-black/10 to-black/20"
           >
             <span className="flex h-20 w-20 items-center justify-center rounded-full bg-surface/95 text-foreground shadow-2xl">
-              <PlayIcon className="h-8 w-8 translate-x-0.5" />
+              <PlayIcon className="h-8 w-8" />
             </span>
             <span className="absolute bottom-5 right-5 rounded-md bg-black/60 px-2 py-1 text-xs font-medium tabular-nums text-white backdrop-blur">
               {formatDuration(total)}

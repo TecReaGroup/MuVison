@@ -1,9 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import { HttpError } from '../../shared/httpError'
+import { NAME_FIELD_SCHEMA } from '../../shared/schema'
 import type { SubmissionJob, SubmissionQueue } from './submissionQueue'
 import { fetchYouTubePreview, requireYouTubeId, type YouTubePreview } from './youtube'
-
-const TEXT_FIELD = { type: 'string', minLength: 1, maxLength: 200, pattern: '\\S' } as const
 
 type PreviewRoute = { Querystring: { url: string } }
 type SubmitRoute = { Body: { url: string; title: string; creator: string; album: string } }
@@ -23,7 +22,12 @@ export function registerSubmissionRoutes(app: FastifyInstance, queue: Submission
         body: {
           type: 'object',
           required: ['url', 'title', 'creator', 'album'],
-          properties: { url: { type: 'string' }, title: TEXT_FIELD, creator: TEXT_FIELD, album: TEXT_FIELD },
+          properties: {
+            url: { type: 'string' },
+            title: NAME_FIELD_SCHEMA,
+            creator: NAME_FIELD_SCHEMA,
+            album: NAME_FIELD_SCHEMA,
+          },
         },
       },
     },
