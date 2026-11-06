@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import Fastify, { type FastifyError } from 'fastify'
 import fastifyStatic from '@fastify/static'
@@ -10,6 +11,7 @@ import { registerCatalogRoutes } from './feature/catalog/route'
 import { MetubeClient } from './feature/submission/metubeClient'
 import { registerSubmissionRoutes } from './feature/submission/route'
 import { SubmissionQueue } from './feature/submission/submissionQueue'
+import { registerWebRoutes } from './feature/web/route'
 import { LOG_DIR, TEMP_DIR, loadConfig } from './shared/config'
 import { configureLog, createLogger } from './shared/log'
 
@@ -38,6 +40,11 @@ await app.register(fastifyStatic, { root: config.videoDir, serve: false })
 registerAuthRoutes(app, new PasswordGate(config.password, config.sessionMaxAgeMs))
 registerCatalogRoutes(app, library, creatorPhotos, tagWriter)
 registerSubmissionRoutes(app, submissionQueue)
+// In development Vite serves the frontend, so dist/ only exists after `pnpm build`
+if (existsSync(config.webDistDir)) {
+  registerWebRoutes(app, config.webDistDir)
+  log.info(`Serving frontend from ${config.webDistDir}`)
+}
 
 app.addHook('onResponse', async (request, reply) => {
   log.debug(`${request.method} ${request.url} ${reply.statusCode} ${reply.elapsedTime.toFixed(0)}ms`)

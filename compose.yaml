@@ -1,0 +1,19 @@
+services:
+  muvision:
+    build: .
+    image: muvision:latest
+    container_name: muvision
+    restart: unless-stopped
+    # Options: host, bridge
+    # host shares the host's network, so metube_url can point at 127.0.0.1;
+    # with bridge, remove this line and add `ports: ["5005:5005"]`
+    network_mode: host
+    environment:
+      # MeTube address reachable from inside the container
+      metube_url: http://127.0.0.1:8081
+      # Password for the login page
+      password: change-me
+    volumes:
+      - ./backend/data/video:/app/backend/data/video
+      - ./backend/data/creator:/app/backend/data/creator
+      - ./log:/app/log

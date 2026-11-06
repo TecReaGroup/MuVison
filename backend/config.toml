@@ -8,6 +8,10 @@ video_dir = "data/video"
 # Creator photos named "<Creator tag>.jpg|.jpeg|.png|.webp"; missing ones are fetched from YouTube on download
 creator_photo_dir = "data/creator"
 
+[web]
+# Built frontend (relative to backend/); served only when the directory exists
+dist_dir = "../dist"
+
 [submission]
 # MeTube video quality; options: best, 2160, 1440, 1080, 720, 480, 360, 240, worst
 quality = "best"

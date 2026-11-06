@@ -6,4 +6,4 @@
 - [x] 网站 icon
 - [x] 视频元数据编辑，播放按钮丑
 - [x] 登录密码
-- [ ] docker 部署
+- [x] docker 部署，comopse 写明 metube_url password 字段，然后默认为 host 网络模式

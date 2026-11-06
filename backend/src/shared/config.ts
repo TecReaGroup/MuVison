@@ -26,6 +26,7 @@ export type AppConfig = {
   port: number
   videoDir: string
   creatorPhotoDir: string
+  webDistDir: string
   submission: SubmissionConfig
   ffmpegPath: string
   logLevel: LogLevel
@@ -36,6 +37,7 @@ export type AppConfig = {
 type RawConfig = {
   server: { host: string; port: number }
   library: { video_dir: string; creator_photo_dir: string }
+  web: { dist_dir: string }
   submission: { quality: string; download_timeout_seconds: number; poll_interval_seconds: number }
   tool: { ffmpeg_path: string }
   log: { level: string }
@@ -62,6 +64,7 @@ export async function loadConfig(path = CONFIG_PATH): Promise<AppConfig> {
     port: raw.server.port,
     videoDir: resolve(BACKEND_DIR, raw.library.video_dir),
     creatorPhotoDir: resolve(BACKEND_DIR, raw.library.creator_photo_dir),
+    webDistDir: resolve(BACKEND_DIR, raw.web.dist_dir),
     submission: {
       metubeUrl: metubeUrl.replace(/\/+$/, ''),
       quality: requireOneOf(raw.submission.quality, METUBE_QUALITIES, 'submission.quality'),
