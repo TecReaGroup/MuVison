@@ -63,5 +63,7 @@ app.setErrorHandler((error: FastifyError, request, reply) => {
 await app.listen({ host: config.host, port: config.port })
 log.info(`Serving on http://${config.host}:${config.port}`)
 
-// Runs after listen so a long transcode never blocks login; scan() repeats per catalog request and picks up results
-void transcoder.convertLibrary(config.videoDir)
+// Also resumes compactions a restart interrupted; scan() repeats per catalog request and picks up results
+transcoder
+  .scheduleLibraryCompaction(config.videoDir)
+  .catch((error: unknown) => log.error(`Library compaction not scheduled: ${error instanceof Error ? error.message : error}`))
