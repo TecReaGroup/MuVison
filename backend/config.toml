@@ -13,8 +13,8 @@ creator_photo_dir = "data/creator"
 dist_dir = "../dist"
 
 [submission]
-# MeTube video quality; options: best, 2160, 1440, 1080, 720, 480, 360, 240, worst
-quality = "best"
+# MeTube video quality (max height); options: best, 2160, 1440, 1080, 720, 480, 360, 240, worst
+quality = "720"
 # How long to wait for MeTube to finish one download before giving up
 download_timeout_seconds = 300
 poll_interval_seconds = 2

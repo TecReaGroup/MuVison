@@ -35,12 +35,12 @@ export class MetubeClient {
   }
 
   async add(url: string): Promise<void> {
-    // The legacy {quality, format, video_codec} body is accepted by both old and current MeTube releases
     const reply = await this.#post<{ status: string; msg?: string }>('/add', {
       url,
-      quality: this.#quality,
+      download_type: 'video',
+      codec: DOWNLOAD_VIDEO_CODEC,
       format: DOWNLOAD_FORMAT,
-      video_codec: DOWNLOAD_VIDEO_CODEC,
+      quality: this.#quality,
     })
     if (reply.status !== 'ok') throw new Error(`MeTube rejected ${url}: ${reply.msg ?? reply.status}`)
   }
