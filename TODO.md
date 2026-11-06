@@ -5,5 +5,5 @@
 - [x] Submit a video 里面 Creator 去解析填充，然后右侧也支持展开选择目前已有的 Creator
 - [x] 网站 icon
 - [x] 视频元数据编辑，播放按钮丑
-- [ ] 登录密码
+- [x] 登录密码
 - [ ] docker 部署

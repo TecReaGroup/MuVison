@@ -1,4 +1,4 @@
-.PHONY: install run run-frontend run-backend lint build preview format
+.PHONY: install run run-frontend run-backend
 
 install:
 	pnpm install --frozen-lockfile
@@ -12,16 +12,3 @@ run-frontend:
 
 run-backend:
 	pnpm --dir backend dev
-
-lint:
-	pnpm lint
-	pnpm --dir backend lint
-
-build:
-	pnpm build
-
-preview:
-	pnpm preview
-
-format:
-	pnpm format
