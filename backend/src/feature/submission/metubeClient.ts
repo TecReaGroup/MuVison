@@ -6,8 +6,9 @@ import type { ReadableStream } from 'node:stream/web'
 const REQUEST_TIMEOUT_MS = 15_000
 // Tag writing relies on an MP4 container, so this is not configurable
 const DOWNLOAD_FORMAT = 'mp4'
-// MeTube codec preference; options: auto, h264, h265, av1, vp9
-const DOWNLOAD_VIDEO_CODEC = 'h265'
+// MeTube codec preference (falls back to any codec when missing); options: auto, h264, h265, av1, vp9
+// NOTE: YouTube serves no HEVC, and its AV1/VP9 do not play on older iPhones, so H.264 is the only safe choice
+const DOWNLOAD_VIDEO_CODEC = 'h264'
 
 /** One entry of MeTube's /history; `id` is the YouTube video id, `url` is MeTube's key for /delete. */
 export type MetubeDownload = {
