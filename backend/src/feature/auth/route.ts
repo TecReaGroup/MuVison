@@ -7,6 +7,9 @@ const SESSION_COOKIE = 'muvision_session'
 const AUTH_ROUTE_PREFIX = '/api/auth/'
 // Slows down password guessing without needing a rate-limit store
 const LOGIN_FAILURE_DELAY_MS = 1000
+// API responses belong to one logged-in session: a CDN or proxy must never store and replay them,
+// and the browser must revalidate so edits show up immediately
+const API_CACHE_CONTROL = 'private, no-cache'
 
 type LoginRoute = { Body: { password: string } }
 
@@ -25,6 +28,11 @@ export function registerAuthRoutes(app: FastifyInstance, gate: PasswordGate): vo
   app.addHook('onRequest', async (request) => {
     if (!request.url.startsWith('/api/') || request.url.startsWith(AUTH_ROUTE_PREFIX)) return
     if (!gate.acceptsSessionToken(readSessionCookie(request))) throw new HttpError(401, 'Login required')
+  })
+
+  // onSend runs after @fastify/static sets its own Cache-Control, so this overrides it for streams and covers too
+  app.addHook('onSend', async (request, reply) => {
+    if (request.url.startsWith('/api/')) reply.header('Cache-Control', API_CACHE_CONTROL)
   })
 
   app.get('/api/auth/session', async (request, reply) => {

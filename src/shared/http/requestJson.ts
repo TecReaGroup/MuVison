@@ -9,7 +9,8 @@ export class ApiError extends Error {
 }
 
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init)
+  // API state changes on every edit; never answer from the HTTP cache even if a CDN marked it cacheable
+  const response = await fetch(url, { cache: 'no-store', ...init })
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { error?: string } | null
     throw new ApiError(response.status, body?.error ?? `${init?.method ?? 'GET'} ${url} failed: ${response.status}`)
