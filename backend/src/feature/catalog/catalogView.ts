@@ -15,8 +15,9 @@ export type VideoView = {
 }
 export type CatalogView = { authors: AuthorView[]; albums: AlbumView[]; videos: VideoView[] }
 
-export const coverUrl = (videoId: string) => `/api/video/${videoId}/cover`
-export const streamUrl = (videoId: string) => `/api/video/${videoId}/stream`
+// Public and versioned: a retag changes the URL, so CDNs and browsers may cache these forever
+export const coverUrl = ({ id, version }: LibraryVideo) => `/media/video/${id}/${version}/cover`
+export const streamUrl = ({ id, version }: LibraryVideo) => `/media/video/${id}/${version}/stream`
 export const creatorPhotoUrl = (authorId: string) => `/api/creator/${authorId}/photo`
 export const authorIdOf = (creator: string) => stableId('author', creator)
 
@@ -28,11 +29,12 @@ export const authorIdOf = (creator: string) => stableId('author', creator)
 export function buildCatalog(videos: LibraryVideo[], photos: CreatorPhotoStore): CatalogView {
   const authors = new Map<string, AuthorView>()
   const albums = new Map<string, AlbumView>()
-  const videoViews = videos.map(({ id, tag }): VideoView => {
+  const videoViews = videos.map((video): VideoView => {
+    const { id, tag } = video
     const authorId = authorIdOf(tag.creator)
     const albumId = stableId('album', tag.album)
     if (!authors.has(authorId)) {
-      const avatar = photos.findFileName(tag.creator) ? creatorPhotoUrl(authorId) : coverUrl(id)
+      const avatar = photos.findFileName(tag.creator) ? creatorPhotoUrl(authorId) : coverUrl(video)
       authors.set(authorId, { id: authorId, name: tag.creator, avatar })
     }
     const album = albums.get(albumId) ?? { id: albumId, title: tag.album, authorIds: [] }
@@ -43,8 +45,8 @@ export function buildCatalog(videos: LibraryVideo[], photos: CreatorPhotoStore):
       title: tag.title,
       authorId,
       albumId,
-      cover: coverUrl(id),
-      src: streamUrl(id),
+      cover: coverUrl(video),
+      src: streamUrl(video),
       durationSeconds: tag.durationSeconds,
     }
   })

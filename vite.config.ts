@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 // Must match [server] in backend/config.toml
 const BACKEND_URL = 'http://127.0.0.1:8000'
-const proxy = { '/api': BACKEND_URL }
+const proxy = { '/api': BACKEND_URL, '/media': BACKEND_URL }
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

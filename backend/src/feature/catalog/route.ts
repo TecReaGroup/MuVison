@@ -12,7 +12,12 @@ import type { VideoTagInput, VideoTagWriter } from './videoTagWriter'
 const PLACEHOLDER_COVER =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#e7e5e4"/></svg>'
 
+// Media URLs embed the file version, so a given URL always serves the same bytes.
+// They are public (outside the /api login lock) so a CDN can cache them
+const MEDIA_CACHE_CONTROL = 'public, max-age=31536000, immutable'
+
 type VideoParams = { Params: { videoId: string } }
+type VideoVersionParams = { Params: { videoId: string; version: string } }
 type CreatorParams = { Params: { authorId: string } }
 type EditVideoRoute = VideoParams & { Body: VideoTagInput }
 
@@ -34,13 +39,23 @@ export function registerCatalogRoutes(
   // Rescan on every catalog load so files dropped into the folder show up without a restart
   app.get('/api/catalog', async (): Promise<CatalogView> => buildCatalog(await library.scan(), photos))
 
+  // A stale version is a 404, never the current file: otherwise a CDN would cache new content under an old URL
+  const requireVideoVersion = ({ videoId, version }: VideoVersionParams['Params']): LibraryVideo => {
+    const video = requireVideo(videoId)
+    if (video.version !== version) throw new HttpError(404, `Video version not found: ${videoId}/${version}`)
+    return video
+  }
+
   // sendFile answers HTTP Range requests, which <video> needs for seeking
-  app.get<VideoParams>('/api/video/:videoId/stream', (request, reply) =>
-    reply.sendFile(requireVideo(request.params.videoId).relativePath),
+  app.get<VideoVersionParams>('/media/video/:videoId/:version/stream', (request, reply) =>
+    reply
+      .header('Cache-Control', MEDIA_CACHE_CONTROL)
+      .sendFile(requireVideoVersion(request.params).relativePath, { cacheControl: false }),
   )
 
-  app.get<VideoParams>('/api/video/:videoId/cover', async (request, reply) => {
-    const cover = await readCover(requireVideo(request.params.videoId).absolutePath)
+  app.get<VideoVersionParams>('/media/video/:videoId/:version/cover', async (request, reply) => {
+    const cover = await readCover(requireVideoVersion(request.params).absolutePath)
+    reply.header('Cache-Control', MEDIA_CACHE_CONTROL)
     if (!cover) return reply.type('image/svg+xml').send(PLACEHOLDER_COVER)
     return reply.type(cover.mediaType).send(Buffer.from(cover.content))
   })

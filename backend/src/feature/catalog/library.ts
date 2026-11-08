@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { readdir, rm } from 'node:fs/promises'
+import { readdir, rm, stat } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { FILE_IN_USE_CODES } from '../../shared/fileSystem'
 import { HttpError } from '../../shared/httpError'
@@ -27,7 +27,14 @@ export type LibraryVideo = {
   /** POSIX path relative to the video directory */
   relativePath: string
   absolutePath: string
+  /** Changes whenever the file is rewritten (e.g. retagged), so URLs keyed by it can be cached forever */
+  version: string
   tag: VideoTag
+}
+
+const fileVersionOf = async (path: string) => {
+  const { mtimeMs, size } = await stat(path)
+  return `${Math.floor(mtimeMs).toString(36)}${size.toString(36)}`
 }
 
 /** Index of tagged videos found under one directory. */
@@ -44,7 +51,13 @@ export class VideoLibrary {
     for (const relativePath of await listVideoFiles(this.videoDir)) {
       const absolutePath = join(this.videoDir, relativePath)
       try {
-        const video = { id: stableId(relativePath), relativePath, absolutePath, tag: await readVideoTag(absolutePath) }
+        const video = {
+          id: stableId(relativePath),
+          relativePath,
+          absolutePath,
+          version: await fileVersionOf(absolutePath),
+          tag: await readVideoTag(absolutePath),
+        }
         videos.set(video.id, video)
       } catch (error) {
         log.warn(`Skip unreadable video ${relativePath}: ${error instanceof Error ? error.message : error}`)
