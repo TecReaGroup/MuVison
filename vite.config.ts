@@ -12,9 +12,8 @@ const CANVAS_COLOR = '#f7f6f3'
 const GOOGLE_FONT_CACHE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365
 
 const pwa = VitePWA({
-  // The page asks before activating a new version, so a playing video is never reloaded out from under the user
-  registerType: 'prompt',
-  injectRegister: false,
+  // A plain registration script that never reloads the page: a playing video is left alone
+  injectRegister: 'script-defer',
   manifest: {
     id: '/',
     name: 'MuVision',
@@ -33,6 +32,11 @@ const pwa = VitePWA({
     ],
   },
   workbox: {
+    // The new worker takes over at once so the next launch runs the new build. Otherwise it waits until every
+    // window is closed, which an installed app on iOS may not do for days.
+    // NOTE: the plugin only sets these itself with injectRegister 'auto'
+    skipWaiting: true,
+    clientsClaim: true,
     globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
     navigateFallback: '/index.html',
     // API answers depend on the login session and media streams need HTTP Range: both must always hit the network
