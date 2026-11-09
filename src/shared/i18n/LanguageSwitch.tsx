@@ -29,22 +29,25 @@ export function LanguageSwitch() {
   }, [open])
 
   return (
-    <div ref={ref} className="relative w-9 sm:w-[132px]">
+    <div ref={ref} className="relative w-9 md:w-[132px]">
       <motion.button
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t.language}
-        className={`flex h-9 w-full items-center justify-center gap-1 rounded-xl bg-surface text-[13px] sm:grid sm:grid-cols-[16px_1fr_16px] sm:px-3 font-medium text-stone-700 ring-1 transition-all duration-300 hover:text-foreground ${
-          open ? 'ring-stone-400 shadow-[0_4px_16px_rgba(0,0,0,0.06)]' : 'ring-border hover:ring-stone-300'
+        // Mobile: bare icon like the header's search button; desktop: bordered pill showing the current language
+        className={`flex h-9 w-full items-center justify-center gap-1 rounded-xl text-[13px] font-medium text-secondary transition-all duration-300 hover:bg-stone-200/60 md:grid md:grid-cols-[16px_1fr_16px] md:bg-surface md:px-3 md:text-stone-700 md:ring-1 md:hover:bg-surface md:hover:text-foreground ${
+          open
+            ? 'bg-stone-200/60 md:shadow-[0_4px_16px_rgba(0,0,0,0.06)] md:ring-stone-400'
+            : 'md:ring-border md:hover:ring-stone-300'
         }`}
       >
-        <GlobeIcon className="h-4 w-4 shrink-0 text-muted" />
-        <span className="hidden text-center sm:inline">{current.label}</span>
+        <GlobeIcon className="h-5 w-5 shrink-0 md:h-4 md:w-4 md:text-muted" />
+        <span className="hidden text-center md:inline">{current.label}</span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.2, ease: EASE }}
-          className="hidden justify-center text-subtle sm:flex"
+          className="hidden justify-center text-subtle md:flex"
         >
           <ChevronDownIcon className="h-3.5 w-3.5" />
         </motion.span>
@@ -59,7 +62,7 @@ export function LanguageSwitch() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: EASE }}
-            className="absolute right-0 top-full z-40 mt-1.5 w-36 rounded-xl bg-surface p-1 sm:inset-x-0 sm:w-auto shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18)] ring-1 ring-border/80"
+            className="absolute right-0 top-full z-40 mt-1.5 w-36 rounded-xl bg-surface p-1 md:inset-x-0 md:w-auto shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18)] ring-1 ring-border/80"
           >
             {LANGS.map(({ key, label }) => {
               const active = lang === key
