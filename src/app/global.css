@@ -9,6 +9,8 @@
   body {
     height: 100%;
     overflow: hidden;
+    /* iOS still rubber-bands an overflow-hidden page; only the inner scroll area should bounce */
+    overscroll-behavior: none;
   }
   html {
     -webkit-text-size-adjust: 100%;
@@ -16,6 +18,17 @@
   }
   body {
     @apply bg-canvas text-foreground antialiased font-sans;
+  }
+}
+
+/* Installed app: long-pressing a control must not select its label or open the iOS callout.
+   Inputs are left alone because Safari stops accepting typing under user-select: none */
+@media (display-mode: standalone) {
+  button,
+  nav {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 }
 

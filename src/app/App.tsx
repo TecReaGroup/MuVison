@@ -79,8 +79,9 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      {/* App shell: only the content area scrolls, never the whole page */}
-      <div className="flex h-dvh flex-col overflow-hidden">
+      {/* App shell: only the content area scrolls, never the whole page.
+          viewport-fit=cover lets it reach under notches, so the insets keep content clear of them */}
+      <div className="flex h-dvh flex-col overflow-hidden pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         {/* Header */}
         <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border/70 bg-canvas px-4 md:h-16 md:gap-6 md:px-6">
           {mobileSearch ? (

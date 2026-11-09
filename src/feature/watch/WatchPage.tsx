@@ -7,6 +7,7 @@ import { ArrowLeftIcon, ArrowRightIcon } from '@/shared/design/icon'
 import { EASE } from '@/shared/design/motion'
 import { VideoPlayer } from './VideoPlayer'
 import { PlaylistPanel } from './PlaylistPanel'
+import { useMediaSession } from './useMediaSession'
 import './watch.css'
 
 type WatchProps = {
@@ -37,6 +38,8 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
   const { t } = useI18n()
   const [isPlaying, setIsPlaying] = useState(false)
   const authorVideoCount = videos.filter((v) => v.authorId === author.id).length
+  const playNext = next && (() => onPlay(next))
+  useMediaSession({ title: video.title, artist: author.name, album: album.title, artwork: video.cover }, playNext)
 
   return (
     <div className="watch-shell">

@@ -2,13 +2,63 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // Must match [server] in backend/config.toml
 const BACKEND_URL = 'http://127.0.0.1:8000'
 const proxy = { '/api': BACKEND_URL, '/media': BACKEND_URL }
+// Matches --color-canvas so the splash screen and status bar blend into the app
+const CANVAS_COLOR = '#f7f6f3'
+const GOOGLE_FONT_CACHE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365
+
+const pwa = VitePWA({
+  // The page asks before activating a new version, so a playing video is never reloaded out from under the user
+  registerType: 'prompt',
+  injectRegister: false,
+  manifest: {
+    id: '/',
+    name: 'MuVision',
+    short_name: 'MuVision',
+    description: 'MuVision — discover videos, albums and creators.',
+    lang: 'zh-CN',
+    start_url: '/',
+    scope: '/',
+    display: 'standalone',
+    theme_color: CANVAS_COLOR,
+    background_color: CANVAS_COLOR,
+    icons: [
+      { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  },
+  workbox: {
+    globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+    navigateFallback: '/index.html',
+    // API answers depend on the login session and media streams need HTTP Range: both must always hit the network
+    navigateFallbackDenylist: [/^\/api\//, /^\/media\//],
+    cleanupOutdatedCaches: true,
+    runtimeCaching: [
+      {
+        urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
+        handler: 'StaleWhileRevalidate',
+        options: { cacheName: 'google-font-stylesheet' },
+      },
+      {
+        urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-font-file',
+          expiration: { maxAgeSeconds: GOOGLE_FONT_CACHE_MAX_AGE_SECONDS },
+          cacheableResponse: { statuses: [0, 200] },
+        },
+      },
+    ],
+  },
+})
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), pwa],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
