@@ -9,9 +9,10 @@ import WatchPage from '@/feature/watch/WatchPage'
 import SubmitDialog from '@/feature/submission/SubmitDialog'
 import { LanguageSwitch } from '@/shared/i18n/LanguageSwitch'
 import { useI18n } from '@/shared/i18n/I18nProvider'
-import { AlbumIcon, CloseIcon, LogoMark, PlusIcon, PlusSquareIcon, SearchIcon, UserIcon, VideoIcon } from '@/shared/design/icon'
+import { AlbumIcon, CloseIcon, PlusIcon, PlusSquareIcon, SearchIcon, UserIcon, VideoIcon } from '@/shared/design/icon'
 import { SPRING } from '@/shared/design/motion'
 import { useScrollActivity } from '@/shared/design/useScrollActivity'
+import { AppBrand } from './AppBrand'
 import { HOME_ROUTE, useRouter } from './router'
 
 type Section = CatalogSection
@@ -118,10 +119,7 @@ export default function App() {
             onClick={() => go('videos')}
             className={`${mobileSearch ? 'hidden md:flex' : 'flex'} shrink-0 items-center gap-2.5 md:w-52`}
           >
-            <LogoMark className="h-8 w-8 shrink-0" />
-            <span className="text-[18px] font-semibold leading-none tracking-[-0.02em]">
-              Mu<span className="text-subtle">Vision</span>
-            </span>
+            <AppBrand />
           </button>
 
           <div className="hidden flex-1 justify-center md:flex">

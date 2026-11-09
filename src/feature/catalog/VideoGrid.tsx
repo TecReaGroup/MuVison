@@ -8,11 +8,15 @@ import { PencilIcon, PlayIcon } from '@/shared/design/icon'
 import { GRID_ITEM } from '@/shared/design/motion'
 import { useLongPress } from '@/shared/design/useLongPress'
 
+// Shared with the loading skeleton so its placeholder cards line up with the real ones
+export const VIDEO_GRID_CLASS =
+  'grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-6 sm:gap-y-7 md:gap-y-9 xl:grid-cols-3 2xl:grid-cols-4'
+
 export function VideoGrid({
   items,
   onPlay,
   onAuthor,
-  className = 'grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-6 sm:gap-y-7 md:gap-y-9 xl:grid-cols-3 2xl:grid-cols-4',
+  className = VIDEO_GRID_CLASS,
 }: {
   items: Video[]
   onPlay: (v: Video) => void

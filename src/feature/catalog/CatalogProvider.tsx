@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useI18n } from '@/shared/i18n/I18nProvider'
-import { SpinnerIcon } from '@/shared/design/icon'
 import { fetchCatalog, type Album, type Author, type Catalog } from './catalog'
 
 type CatalogIndex = Catalog & {
@@ -29,8 +28,11 @@ async function fetchCatalogWithRetry(signal: AbortSignal): Promise<Catalog> {
   }
 }
 
-/** Loads the catalog once; children render only after it arrives, so they can trust every id resolves. */
-export function CatalogProvider({ children }: { children: ReactNode }) {
+/**
+ * Loads the catalog once; children render only after it arrives, so they can trust every id resolves.
+ * `fallback` shows while loading; a failed load shows its own retry screen.
+ */
+export function CatalogProvider({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {
   const { t } = useI18n()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -67,19 +69,14 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   }, [state, refresh])
 
   if (index) return <CatalogContext.Provider value={index}>{children}</CatalogContext.Provider>
+  if (state.status === 'loading') return fallback
 
   return (
     <div className="flex h-dvh flex-col items-center justify-center gap-4 text-secondary">
-      {state.status === 'loading' ? (
-        <SpinnerIcon className="h-6 w-6 text-subtle" />
-      ) : (
-        <>
-          <p>{t.catalogLoadFailed}</p>
-          <button onClick={() => setAttempt((n) => n + 1)} className="button-secondary">
-            {t.retry}
-          </button>
-        </>
-      )}
+      <p>{t.catalogLoadFailed}</p>
+      <button onClick={() => setAttempt((n) => n + 1)} className="button-secondary">
+        {t.retry}
+      </button>
     </div>
   )
 }

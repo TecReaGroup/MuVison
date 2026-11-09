@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { SpinnerIcon } from '@/shared/design/icon'
 import { checkSession, login } from './authApi'
 import { LoginPage } from './LoginPage'
 
@@ -35,8 +34,8 @@ async function resolveSession(accessPassword: string | null): Promise<SessionSta
   }
 }
 
-/** Renders children only with a valid session, so nothing below needs to handle a 401. */
-export function AuthGate({ children }: { children: ReactNode }) {
+/** Renders children only with a valid session, so nothing below needs to handle a 401. `fallback` shows while checking. */
+export function AuthGate({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {
   const [session, setSession] = useState<SessionState>('checking')
 
   useEffect(() => {
@@ -45,9 +44,5 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (session === 'unlocked') return children
   if (session === 'locked') return <LoginPage onLogin={() => setSession('unlocked')} />
-  return (
-    <div className="flex h-dvh items-center justify-center">
-      <SpinnerIcon className="h-6 w-6 text-subtle" />
-    </div>
-  )
+  return fallback
 }
