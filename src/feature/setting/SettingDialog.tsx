@@ -118,9 +118,9 @@ function SettingDialog({ onClose }: { onClose: () => void }) {
         >
           {/* Phones already name the section in the selected tab */}
           <h3 className="hidden pr-10 text-xl font-semibold tracking-tight sm:block">{t[active.label]}</h3>
-          {active.description && <p className="text-sm text-muted sm:mt-1.5">{t[active.description]}</p>}
+          {active.description && <p className="text-sm leading-6 text-muted sm:mt-1">{t[active.description]}</p>}
           {/* Grows to the remaining height so a panel can center itself in the window */}
-          <div className="mt-4 flex flex-1 flex-col sm:mt-6 sm:min-h-0">
+          <div className="mt-4 flex flex-1 flex-col sm:mt-5 sm:min-h-0">
             <active.Panel />
           </div>
         </section>

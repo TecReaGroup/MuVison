@@ -113,22 +113,23 @@ export function VideoFileTable() {
   const { files } = state
   const totalBytes = files.reduce((sum, file) => sum + file.sizeBytes, 0)
   const dateFormat = new Intl.DateTimeFormat(lang, { year: 'numeric', month: '2-digit', day: '2-digit' })
-  const headerCell = 'whitespace-nowrap px-3 py-2.5 font-medium'
+  const headerCell = 'h-9 whitespace-nowrap px-3 font-medium'
   const bodyCell = 'whitespace-nowrap px-3 py-2.5'
 
   return (
     // Desktop: fills the panel's remaining height so only the table scrolls; phones scroll the whole sheet
     <div className="flex flex-col sm:min-h-0 sm:flex-1">
-      <p className="mb-3 text-sm tabular-nums text-muted">{t.videoFilesSummary(files.length, formatBytes(totalBytes))}</p>
+      <p className="mb-2.5 text-[13px] font-medium tabular-nums text-secondary">{t.videoFilesSummary(files.length, formatBytes(totalBytes))}</p>
       <ul className="divide-y divide-border/70 sm:hidden">
         {files.map((file) => (
           <VideoFileCard key={file.id} file={file} />
         ))}
       </ul>
-      {/* A stable gutter would leave a blank strip beside the sticky header while nothing overflows (unlayered, hence `!`) */}
+      {/* Content cannot paint under the scrollbar, so the frame draws a header-tall band (h-9 = 2.25rem) beside it.
+          A stable gutter would leave a blank strip while nothing overflows (unlayered, hence `!`) */}
       <div
         onScroll={tableScroll.onScroll}
-        className={`${tableScroll.scrollClass} hidden min-h-0 flex-1 overflow-auto rounded-xl [scrollbar-gutter:auto]! ring-1 ring-border sm:block`}
+        className={`${tableScroll.scrollClass} hidden min-h-0 flex-1 overflow-auto rounded-xl bg-[linear-gradient(var(--color-surface-muted)_2.25rem,var(--color-surface)_0)] [scrollbar-gutter:auto]! ring-1 ring-border sm:block`}
       >
         <table className="w-full min-w-[920px] text-left text-[13px]">
           <thead className="sticky top-0 z-10 bg-surface-muted text-xs text-muted">
