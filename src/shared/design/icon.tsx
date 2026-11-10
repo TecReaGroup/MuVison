@@ -97,6 +97,40 @@ export const ChevronDownIcon = ({ className }: IconProps) => (
     <path d="m6 9.5 6 6 6-6" />
   </svg>
 )
+// Lucide list-sort-descending / list-sort-ascending
+export const ListSortDescendingIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <path d="M15 12H3m0-7h18M9 19H3" />
+  </svg>
+)
+export const ListSortAscendingIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <path d="M3 19h18m-6-7H3m6-7H3" />
+  </svg>
+)
+export const SettingIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0a2.34 2.34 0 0 0 3.319 1.915a2.34 2.34 0 0 1 2.33 4.033a2.34 2.34 0 0 0 0 3.831a2.34 2.34 0 0 1-2.33 4.033a2.34 2.34 0 0 0-3.319 1.915a2.34 2.34 0 0 1-4.659 0a2.34 2.34 0 0 0-3.32-1.915a2.34 2.34 0 0 1-2.33-4.033a2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+)
+export const InfoIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 16v-4m0-4h.01" />
+  </svg>
+)
+export const GithubIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5c.08-1.25-.27-2.48-1-3.5c.28-1.15.28-2.35 0-3.5c0 0-1 0-3 1.5c-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5c-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4" />
+    <path d="M9 18c-4.51 2-5-2-7-2" />
+  </svg>
+)
+export const ExternalLinkIcon = ({ className }: IconProps) => (
+  <svg {...ICON_STROKE} className={className}>
+    <path d="M15 3h6v6m-11 5L21 3m-3 10v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+  </svg>
+)
 export const CheckIcon = ({ className }: IconProps) => (
   <svg {...ICON_STROKE} className={className}>
     <path d="m5 12.5 4.5 4.5L19 7.5" />

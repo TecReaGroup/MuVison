@@ -6,6 +6,7 @@ import { PasswordGate } from './feature/auth/passwordGate'
 import { registerAuthRoutes } from './feature/auth/route'
 import { CreatorPhotoStore } from './feature/catalog/creatorPhoto'
 import { VideoLibrary } from './feature/catalog/library'
+import { VideoProber } from './feature/catalog/videoProbe'
 import { VideoTagWriter } from './feature/catalog/videoTagWriter'
 import { registerCatalogRoutes } from './feature/catalog/route'
 import { MetubeClient } from './feature/submission/metubeClient'
@@ -38,7 +39,7 @@ const submissionQueue = new SubmissionQueue(
 const app = Fastify({ logger: false })
 await app.register(fastifyStatic, { root: config.videoDir, serve: false })
 registerAuthRoutes(app, new PasswordGate(config.password, config.sessionMaxAgeMs))
-registerCatalogRoutes(app, library, creatorPhotos, tagWriter)
+registerCatalogRoutes(app, library, creatorPhotos, tagWriter, new VideoProber(config.ffprobePath))
 registerSubmissionRoutes(app, submissionQueue)
 // In development Vite serves the frontend, so dist/ only exists after `pnpm build`
 if (existsSync(config.webDistDir)) {

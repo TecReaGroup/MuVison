@@ -1,20 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useI18n } from '@/shared/i18n/I18nProvider'
-import type { Language } from './locale'
+import { LANGUAGES } from './locale'
 import { CheckIcon, ChevronDownIcon, GlobeIcon } from '@/shared/design/icon'
 import { EASE } from '@/shared/design/motion'
-
-const LANGS: { key: Language; label: string }[] = [
-  { key: 'zh', label: '简体中文' },
-  { key: 'en', label: 'English' },
-]
 
 export function LanguageSwitch() {
   const { lang, setLang, t } = useI18n()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const current = LANGS.find((l) => l.key === lang)!
+  const current = LANGUAGES.find((l) => l.key === lang)!
 
   useEffect(() => {
     if (!open) return
@@ -64,7 +59,7 @@ export function LanguageSwitch() {
             transition={{ duration: 0.15, ease: EASE }}
             className="absolute right-0 top-full z-40 mt-1.5 w-36 rounded-xl bg-surface p-1 md:inset-x-0 md:w-auto shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18)] ring-1 ring-border/80"
           >
-            {LANGS.map(({ key, label }) => {
+            {LANGUAGES.map(({ key, label }) => {
               const active = lang === key
               return (
                 <li key={key}>

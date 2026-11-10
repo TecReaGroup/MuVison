@@ -29,12 +29,21 @@ export type LibraryVideo = {
   absolutePath: string
   /** Changes whenever the file is rewritten (e.g. retagged), so URLs keyed by it can be cached forever */
   version: string
+  /** Epoch ms the video joined the library; retagging preserves it */
+  addedAt: number
+  sizeBytes: number
   tag: VideoTag
 }
 
-const fileVersionOf = async (path: string) => {
-  const { mtimeMs, size } = await stat(path)
-  return `${Math.floor(mtimeMs).toString(36)}${size.toString(36)}`
+// ctime moves on every rewrite and cannot be set back, so it versions URLs;
+// mtime is restored after a retag, so it keeps dating when the file first arrived
+const fileStampOf = async (path: string) => {
+  const { ctimeMs, mtimeMs, size } = await stat(path)
+  return {
+    version: `${Math.floor(ctimeMs).toString(36)}${size.toString(36)}`,
+    addedAt: Math.floor(mtimeMs),
+    sizeBytes: size,
+  }
 }
 
 /** Index of tagged videos found under one directory. */
@@ -55,7 +64,7 @@ export class VideoLibrary {
           id: stableId(relativePath),
           relativePath,
           absolutePath,
-          version: await fileVersionOf(absolutePath),
+          ...(await fileStampOf(absolutePath)),
           tag: await readVideoTag(absolutePath),
         }
         videos.set(video.id, video)

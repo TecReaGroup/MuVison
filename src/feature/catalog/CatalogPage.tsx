@@ -8,10 +8,36 @@ import { PageTitle } from '@/shared/design/PageTitle'
 import { AuthorCard } from './AuthorCard'
 import { SearchEmpty } from './SearchEmpty'
 import { VideoGrid } from './VideoGrid'
+import { CatalogSortSwitch, useCatalogSort, type CatalogSort } from './CatalogSortSwitch'
 
 export type CatalogSection = 'videos' | 'albums' | 'authors'
 
 const matchesQuery = (text: string, q: string) => text.toLowerCase().includes(q.trim().toLowerCase())
+
+/** Orders by `addedAt` or by `name`; names use the UI language's collation (pinyin for zh). */
+function sortItems<T>(
+  items: T[],
+  { field, direction }: CatalogSort,
+  lang: string,
+  addedAt: (item: T) => number,
+  name: (item: T) => string,
+) {
+  const collator = new Intl.Collator(lang, { numeric: true, sensitivity: 'base' })
+  const compareAscending =
+    field === 'date' ? (a: T, b: T) => addedAt(a) - addedAt(b) : (a: T, b: T) => collator.compare(name(a), name(b))
+  const sign = direction === 'ascending' ? 1 : -1
+  return [...items].sort((a, b) => sign * compareAscending(a, b))
+}
+
+/** Latest `addedAt` among each group's videos, so a group surfaces when anything new joins it. */
+function latestAddedAtBy(videos: Video[], groupIdOf: (video: Video) => string) {
+  const latest = new Map<string, number>()
+  for (const video of videos) {
+    const id = groupIdOf(video)
+    latest.set(id, Math.max(latest.get(id) ?? 0, video.addedAt))
+  }
+  return latest
+}
 
 export function CatalogPage({
   section,
@@ -26,20 +52,43 @@ export function CatalogPage({
   onAuthor: (id: string) => void
   onAlbum: (id: string) => void
 }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { videos, albums, authors, authorById } = useCatalog()
+  const [sort, setSort] = useCatalogSort(section)
+  const albumAddedAt = useMemo(() => latestAddedAtBy(videos, (v) => v.albumId), [videos])
+  const authorAddedAt = useMemo(() => latestAddedAtBy(videos, (v) => v.authorId), [videos])
   const filteredVideos = useMemo(
-    () => videos.filter((v) => matchesQuery(v.title, query) || matchesQuery(authorById(v.authorId).name, query)),
-    [videos, authorById, query],
+    () =>
+      sortItems(
+        videos.filter((v) => matchesQuery(v.title, query) || matchesQuery(authorById(v.authorId).name, query)),
+        sort,
+        lang,
+        (v) => v.addedAt,
+        (v) => v.title,
+      ),
+    [videos, authorById, query, sort, lang],
   )
-  const filteredAlbums = albums.filter(
-    (a) => matchesQuery(a.title, query) || a.authorIds.some((id) => matchesQuery(authorById(id).name, query)),
+  const filteredAlbums = sortItems(
+    albums.filter(
+      (a) => matchesQuery(a.title, query) || a.authorIds.some((id) => matchesQuery(authorById(id).name, query)),
+    ),
+    sort,
+    lang,
+    (a) => albumAddedAt.get(a.id) ?? 0,
+    (a) => a.title,
   )
-  const filteredAuthors = authors.filter((a) => matchesQuery(a.name, query))
+  const filteredAuthors = sortItems(
+    authors.filter((a) => matchesQuery(a.name, query)),
+    sort,
+    lang,
+    (a) => authorAddedAt.get(a.id) ?? 0,
+    (a) => a.name,
+  )
+  const sortSwitch = <CatalogSortSwitch sort={sort} onSort={setSort} />
 
   return section === 'videos' ? (
     <>
-      <PageTitle title={t.navVideos} sub={t.videoCount(filteredVideos.length)} />
+      <PageTitle title={t.navVideos} sub={t.videoCount(filteredVideos.length)} action={sortSwitch} />
       {filteredVideos.length ? (
         <VideoGrid items={filteredVideos} onPlay={onPlay} onAuthor={onAuthor} />
       ) : (
@@ -48,7 +97,7 @@ export function CatalogPage({
     </>
   ) : section === 'albums' ? (
     <>
-      <PageTitle title={t.navAlbums} sub={t.albumCount(filteredAlbums.length)} />
+      <PageTitle title={t.navAlbums} sub={t.albumCount(filteredAlbums.length)} action={sortSwitch} />
       {filteredAlbums.length ? (
         <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-6 sm:gap-y-8 md:gap-y-10 xl:grid-cols-3 2xl:grid-cols-4">
           <AnimatePresence mode="popLayout">
@@ -83,7 +132,7 @@ export function CatalogPage({
     </>
   ) : (
     <>
-      <PageTitle title={t.navAuthors} sub={t.authorCount(filteredAuthors.length)} />
+      <PageTitle title={t.navAuthors} sub={t.authorCount(filteredAuthors.length)} action={sortSwitch} />
       {filteredAuthors.length ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 xl:grid-cols-4 2xl:grid-cols-6">
           <AnimatePresence mode="popLayout">

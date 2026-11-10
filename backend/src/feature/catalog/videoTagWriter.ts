@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { promisify } from 'node:util'
 import { FILE_IN_USE_CODES, moveFile } from '../../shared/fileSystem'
@@ -48,7 +48,7 @@ export class VideoTagWriter {
     await execFileAsync(this.#ffmpegPath, args, { windowsHide: true })
   }
 
-  /** Rewrites a library video's tags in place, keeping its cover and file name (so its id stays stable). */
+  /** Rewrites a library video's tags in place, keeping its cover, file name (so its id stays stable) and mtime (its added date). */
   async retag(video: LibraryVideo, tag: VideoTagInput): Promise<void> {
     if (!RETAGGABLE_EXTENSIONS.has(extname(video.absolutePath).toLowerCase())) {
       throw new HttpError(415, `Editing is only supported for MP4 videos: ${video.relativePath}`)
@@ -56,6 +56,7 @@ export class VideoTagWriter {
     const jobDir = join(this.#workDir, randomUUID())
     await mkdir(jobDir, { recursive: true })
     try {
+      const { atime, mtime } = await stat(video.absolutePath)
       const existingCover = await readCover(video.absolutePath)
       let cover: string | undefined
       if (existingCover) {
@@ -70,6 +71,7 @@ export class VideoTagWriter {
         }
         throw error
       })
+      await utimes(video.absolutePath, atime, mtime)
     } finally {
       await rm(jobDir, { recursive: true, force: true })
     }

@@ -12,11 +12,33 @@ export type Video = {
   cover: string
   src: string
   durationSeconds: number
+  /** Epoch ms */
+  addedAt: number
 }
 export type Catalog = { authors: Author[]; albums: Album[]; videos: Video[] }
+/** One library file with its tags and encoding facts; a null field means the file has no such stream. */
+export type VideoFile = {
+  id: string
+  title: string
+  creator: string
+  album: string
+  path: string
+  sizeBytes: number
+  durationSeconds: number
+  addedAt: number
+  videoCodec: string | null
+  audioCodec: string | null
+  width: number | null
+  height: number | null
+  frameRate: number | null
+  bitRate: number | null
+}
 export type VideoTagInput = { title: string; creator: string; album: string }
 
 export const fetchCatalog = (signal?: AbortSignal) => requestJson<Catalog>(CATALOG_URL, { signal })
+
+/** Probes every file for codecs, so it is slower than the catalog; fetch only when the list is shown. */
+export const fetchVideoFiles = (signal?: AbortSignal) => requestJson<VideoFile[]>('/api/library/video', { signal })
 
 /** Rewrites the tags inside the video file; the catalog must be refreshed to see the result. */
 export const updateVideoTags = (videoId: string, tag: VideoTagInput) => patchJson<void>(`/api/video/${videoId}`, tag)

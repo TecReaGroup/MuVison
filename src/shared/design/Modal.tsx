@@ -9,10 +9,13 @@ import { EASE } from './motion'
 export function Modal({
   labelledBy,
   onClose,
+  className = 'sm:max-w-[480px] sm:max-h-none sm:overflow-visible',
   children,
 }: {
   labelledBy: string
   onClose: () => void
+  /** Desktop panel sizing; defaults to a compact form dialog */
+  className?: string
   children: ReactNode
 }) {
   useEffect(() => {
@@ -43,7 +46,7 @@ export function Modal({
         exit={{ opacity: 0, y: 8 }}
         transition={{ duration: 0.2, ease: EASE }}
         onMouseDown={(e) => e.stopPropagation()}
-        className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.35)] ring-1 ring-border/70 sm:max-h-none sm:max-w-[480px] sm:overflow-visible sm:rounded-2xl sm:pb-0"
+        className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.35)] ring-1 ring-border/70 sm:rounded-2xl sm:pb-0 ${className}`}
       >
         {/* Grabber hints the bottom-sheet presentation on phones */}
         <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-stone-200 sm:hidden" aria-hidden="true" />

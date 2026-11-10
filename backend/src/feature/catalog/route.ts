@@ -2,10 +2,11 @@ import type { FastifyInstance } from 'fastify'
 import { HttpError } from '../../shared/httpError'
 import { createLogger } from '../../shared/log'
 import { NAME_FIELD_SCHEMA } from '../../shared/schema'
-import { authorIdOf, buildCatalog, type CatalogView } from './catalogView'
+import { authorIdOf, buildCatalog, buildVideoFileList, type CatalogView, type VideoFileView } from './catalogView'
 import type { CreatorPhotoStore } from './creatorPhoto'
 import type { LibraryVideo, VideoLibrary } from './library'
 import { readCover } from './metadata'
+import type { VideoProber } from './videoProbe'
 import type { VideoTagInput, VideoTagWriter } from './videoTagWriter'
 
 // Neutral 16:9 frame for videos without an embedded cover, so clients can always render `cover`
@@ -29,6 +30,7 @@ export function registerCatalogRoutes(
   library: VideoLibrary,
   photos: CreatorPhotoStore,
   tagWriter: VideoTagWriter,
+  prober: VideoProber,
 ): void {
   const requireVideo = (videoId: string): LibraryVideo => {
     const video = library.find(videoId)
@@ -38,6 +40,11 @@ export function registerCatalogRoutes(
 
   // Rescan on every catalog load so files dropped into the folder show up without a restart
   app.get('/api/catalog', async (): Promise<CatalogView> => buildCatalog(await library.scan(), photos))
+
+  app.get('/api/library/video', async (): Promise<VideoFileView[]> => {
+    const videos = await library.scan()
+    return buildVideoFileList(videos, await prober.probeAll(videos))
+  })
 
   // A stale version is a 404, never the current file: otherwise a CDN would cache new content under an old URL
   const requireVideoVersion = ({ videoId, version }: VideoVersionParams['Params']): LibraryVideo => {

@@ -7,7 +7,7 @@ import { AuthorDetail } from '@/feature/catalog/AuthorDetail'
 import { AlbumDetail } from '@/feature/catalog/AlbumDetail'
 import WatchPage from '@/feature/watch/WatchPage'
 import SubmitDialog from '@/feature/submission/SubmitDialog'
-import { LanguageSwitch } from '@/shared/i18n/LanguageSwitch'
+import { SettingButton } from '@/feature/setting/SettingDialog'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { AlbumIcon, CloseIcon, PlusIcon, PlusSquareIcon, SearchIcon, UserIcon, VideoIcon } from '@/shared/design/icon'
 import { SPRING } from '@/shared/design/motion'
@@ -162,7 +162,7 @@ export default function App() {
             </>
           )}
           <div className={`${mobileSearch ? 'hidden md:flex' : 'flex'} shrink-0 justify-end lg:w-52`}>
-            <LanguageSwitch />
+            <SettingButton />
           </div>
         </header>
 

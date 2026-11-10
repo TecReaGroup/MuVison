@@ -1,5 +1,6 @@
 import type { CreatorPhotoStore } from './creatorPhoto'
 import { stableId, type LibraryVideo } from './library'
+import type { VideoProbe } from './videoProbe'
 
 export type AuthorView = { id: string; name: string; avatar: string }
 /** `authorIds` lists every creator with a video in the album, in first-appearance order. */
@@ -12,8 +13,22 @@ export type VideoView = {
   cover: string
   src: string
   durationSeconds: number
+  /** Epoch ms */
+  addedAt: number
 }
 export type CatalogView = { authors: AuthorView[]; albums: AlbumView[]; videos: VideoView[] }
+/** One library file with its tags and encoding facts, for the settings overview. */
+export type VideoFileView = VideoProbe & {
+  id: string
+  title: string
+  creator: string
+  album: string
+  /** POSIX path relative to the video directory */
+  path: string
+  sizeBytes: number
+  durationSeconds: number
+  addedAt: number
+}
 
 // Public and versioned: a retag changes the URL, so CDNs and browsers may cache these forever
 export const coverUrl = ({ id, version }: LibraryVideo) => `/media/video/${id}/${version}/cover`
@@ -30,7 +45,7 @@ export function buildCatalog(videos: LibraryVideo[], photos: CreatorPhotoStore):
   const authors = new Map<string, AuthorView>()
   const albums = new Map<string, AlbumView>()
   const videoViews = videos.map((video): VideoView => {
-    const { id, tag } = video
+    const { id, tag, addedAt } = video
     const authorId = authorIdOf(tag.creator)
     const albumId = stableId('album', tag.album)
     if (!authors.has(authorId)) {
@@ -48,7 +63,22 @@ export function buildCatalog(videos: LibraryVideo[], photos: CreatorPhotoStore):
       cover: coverUrl(video),
       src: streamUrl(video),
       durationSeconds: tag.durationSeconds,
+      addedAt,
     }
   })
   return { authors: [...authors.values()], albums: [...albums.values()], videos: videoViews }
+}
+
+export function buildVideoFileList(videos: LibraryVideo[], probes: Map<string, VideoProbe>): VideoFileView[] {
+  return videos.map(({ id, tag, relativePath, sizeBytes, addedAt }) => ({
+    id,
+    title: tag.title,
+    creator: tag.creator,
+    album: tag.album,
+    path: relativePath,
+    sizeBytes,
+    durationSeconds: tag.durationSeconds,
+    addedAt,
+    ...probes.get(id)!,
+  }))
 }
