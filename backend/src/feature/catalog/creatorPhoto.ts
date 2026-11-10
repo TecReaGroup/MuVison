@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { statSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { toFileStem } from '../../shared/fileName'
@@ -9,6 +9,9 @@ const EXTENSION_BY_MEDIA_TYPE: Record<string, string> = {
   'image/png': '.png',
   'image/webp': '.webp',
 }
+
+/** `version` changes whenever the file is replaced, so URLs keyed by it can be cached forever. */
+export type CreatorPhoto = { fileName: string; version: string }
 
 /**
  * Creator photos stored as `<creator name>.<jpg|jpeg|png|webp>` in one folder.
@@ -23,13 +26,17 @@ export class CreatorPhotoStore {
     this.photoDir = photoDir
   }
 
-  /** Returns the photo's file name inside photoDir, if the creator has one. */
-  findFileName(creator: string): string | undefined {
+  /** The creator's photo inside photoDir, if they have one. */
+  find(creator: string): CreatorPhoto | undefined {
     const stem = toFileStem(creator)
     if (!stem) return undefined
-    return PHOTO_EXTENSIONS.map((extension) => `${stem}${extension}`).find((fileName) =>
-      existsSync(join(this.photoDir, fileName)),
-    )
+    for (const extension of PHOTO_EXTENSIONS) {
+      const fileName = `${stem}${extension}`
+      const stats = statSync(join(this.photoDir, fileName), { throwIfNoEntry: false })
+      // ctime, not mtime: a photo copied in by hand may keep an old mtime from its source
+      if (stats?.isFile()) return { fileName, version: `${Math.floor(stats.ctimeMs).toString(36)}${stats.size.toString(36)}` }
+    }
+    return undefined
   }
 
   /** Throws for media types other than JPEG, PNG and WebP. */

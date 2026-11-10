@@ -20,7 +20,7 @@ const MEDIA_CACHE_CONTROL = 'public, max-age=31536000, immutable'
 
 type VideoParams = { Params: { videoId: string } }
 type VideoVersionParams = { Params: { videoId: string; version: string } }
-type CreatorParams = { Params: { authorId: string } }
+type CreatorPhotoParams = { Params: { authorId: string; version: string } }
 type EditVideoRoute = VideoParams & { Body: VideoTagInput }
 
 const log = createLogger('catalog')
@@ -105,14 +105,17 @@ export function registerCatalogRoutes(
     return reply.status(204).send()
   })
 
-  app.get<CreatorParams>('/api/creator/:authorId/photo', (request, reply) => {
-    const { authorId } = request.params
+  // Versioned like covers; a replaced photo gets a new URL and the old one turns 404
+  app.get<CreatorPhotoParams>('/media/creator/:authorId/:version/photo', (request, reply) => {
+    const { authorId, version } = request.params
     const creator = library
       .list()
       .map((video) => video.tag.creator)
       .find((name) => authorIdOf(name) === authorId)
-    const fileName = creator && photos.findFileName(creator)
-    if (!fileName) throw new HttpError(404, `Creator photo not found: ${authorId}`)
-    return reply.sendFile(fileName, photos.photoDir)
+    const photo = creator && photos.find(creator)
+    if (!photo || photo.version !== version) throw new HttpError(404, `Creator photo not found: ${authorId}/${version}`)
+    return reply
+      .header('Cache-Control', MEDIA_CACHE_CONTROL)
+      .sendFile(photo.fileName, photos.photoDir, { cacheControl: false })
   })
 }

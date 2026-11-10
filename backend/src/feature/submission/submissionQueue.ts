@@ -160,7 +160,7 @@ export class SubmissionQueue {
 
   /** Best effort: the video is already saved, and the catalog falls back to a cover without a photo. */
   async #ensureCreatorPhoto({ creator, videoId }: SubmissionRequest): Promise<void> {
-    if (this.#photos.findFileName(creator)) return
+    if (this.#photos.find(creator)) return
     try {
       const avatarUrl = await fetchChannelAvatarUrl(videoId)
       const response = await fetch(avatarUrl, { signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS) })

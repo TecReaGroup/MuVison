@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { SpinnerIcon } from '@/shared/design/icon'
-import { fetchVideoFiles, formatDuration, type VideoFile } from './catalog'
+import { fetchVideoFiles, formatDuration, readVideoFileSnapshot, type VideoFile } from './catalog'
 import { useCatalog } from './CatalogProvider'
 
 const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -56,34 +56,33 @@ function VideoFileCard({ file }: { file: VideoFile }) {
 
 type LoadState = { status: 'loading' } | { status: 'failed' } | { status: 'loaded'; files: VideoFile[] }
 
-// Outlives the settings dialog, so reopening shows the last list at once while it revalidates
-let lastLoadedFiles: VideoFile[] | null = null
+const newestFirst = (files: VideoFile[]) => files.toSorted((a, b) => b.addedAt - a.addedAt)
+
+const initialLoadState = (): LoadState => {
+  const snapshot = readVideoFileSnapshot()
+  return snapshot ? { status: 'loaded', files: newestFirst(snapshot) } : { status: 'loading' }
+}
 
 /**
  * Every library file with tags, size and encoding details.
- * Refetches whenever the catalog changes (edit, delete, new download), so it stays in sync with the library;
- * the previous list stays on screen meanwhile, and a failed revalidation keeps it.
+ * Renders the last snapshot at once, then refetches on open and whenever the catalog changes
+ * (edit, delete, new download); a failed refetch keeps the list on screen.
  */
 export function VideoFileTable() {
   const { t, lang } = useI18n()
   const { videos } = useCatalog()
-  const [state, setState] = useState<LoadState>(() =>
-    lastLoadedFiles ? { status: 'loaded', files: lastLoadedFiles } : { status: 'loading' },
-  )
+  const [state, setState] = useState<LoadState>(initialLoadState)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     const controller = new AbortController()
-    if (!lastLoadedFiles) setState({ status: 'loading' })
+    setState((current) => (current.status === 'failed' ? { status: 'loading' } : current))
     fetchVideoFiles(controller.signal)
-      .then((files) => {
-        lastLoadedFiles = files.toSorted((a, b) => b.addedAt - a.addedAt)
-        setState({ status: 'loaded', files: lastLoadedFiles })
-      })
+      .then((files) => setState({ status: 'loaded', files: newestFirst(files) }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return
         console.error(error)
-        if (!lastLoadedFiles) setState({ status: 'failed' })
+        setState((current) => (current.status === 'loading' ? { status: 'failed' } : current))
       })
     return () => controller.abort()
   }, [videos, attempt])

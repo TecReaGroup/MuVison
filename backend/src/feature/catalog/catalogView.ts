@@ -1,4 +1,4 @@
-import type { CreatorPhotoStore } from './creatorPhoto'
+import type { CreatorPhoto, CreatorPhotoStore } from './creatorPhoto'
 import { stableId, type LibraryVideo } from './library'
 import type { VideoProbe } from './videoProbe'
 
@@ -33,7 +33,7 @@ export type VideoFileView = VideoProbe & {
 // Public and versioned: a retag changes the URL, so CDNs and browsers may cache these forever
 export const coverUrl = ({ id, version }: LibraryVideo) => `/media/video/${id}/${version}/cover`
 export const streamUrl = ({ id, version }: LibraryVideo) => `/media/video/${id}/${version}/stream`
-export const creatorPhotoUrl = (authorId: string) => `/api/creator/${authorId}/photo`
+export const creatorPhotoUrl = (authorId: string, { version }: CreatorPhoto) => `/media/creator/${authorId}/${version}/photo`
 export const authorIdOf = (creator: string) => stableId('author', creator)
 
 /**
@@ -49,7 +49,8 @@ export function buildCatalog(videos: LibraryVideo[], photos: CreatorPhotoStore):
     const authorId = authorIdOf(tag.creator)
     const albumId = stableId('album', tag.album)
     if (!authors.has(authorId)) {
-      const avatar = photos.findFileName(tag.creator) ? creatorPhotoUrl(authorId) : coverUrl(video)
+      const photo = photos.find(tag.creator)
+      const avatar = photo ? creatorPhotoUrl(authorId, photo) : coverUrl(video)
       authors.set(authorId, { id: authorId, name: tag.creator, avatar })
     }
     const album = albums.get(albumId) ?? { id: albumId, title: tag.album, authorIds: [] }

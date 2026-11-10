@@ -10,8 +10,8 @@ const proxy = { '/api': BACKEND_URL, '/media': BACKEND_URL }
 // Matches --color-canvas so the splash screen and status bar blend into the app
 const CANVAS_COLOR = '#f7f6f3'
 const GOOGLE_FONT_CACHE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365
-// Oldest covers are evicted past this count; covers are a few hundred KB at most
-const COVER_CACHE_MAX_ENTRIES = 2000
+// Oldest images are evicted past this count; covers and creator photos are a few hundred KB at most
+const MEDIA_IMAGE_CACHE_MAX_ENTRIES = 2000
 
 const pwa = VitePWA({
   // A plain registration script that never reloads the page: a playing video is left alone
@@ -46,13 +46,14 @@ const pwa = VitePWA({
     cleanupOutdatedCaches: true,
     runtimeCaching: [
       {
-        // Cover URLs embed the file version, so a cached cover never goes stale. The service worker cache outlives
-        // the HTTP cache, which browsers (iOS above all) evict quickly, so large libraries reopen without refetching
-        urlPattern: /\/media\/video\/[^/]+\/[^/]+\/cover$/,
+        // Cover and creator photo URLs embed the file version, so a cached image never goes stale. The service worker
+        // cache outlives the HTTP cache, which browsers (iOS above all) evict quickly, so large libraries reopen
+        // without refetching
+        urlPattern: /\/media\/(video\/[^/]+\/[^/]+\/cover|creator\/[^/]+\/[^/]+\/photo)$/,
         handler: 'CacheFirst',
         options: {
-          cacheName: 'video-cover',
-          expiration: { maxEntries: COVER_CACHE_MAX_ENTRIES, purgeOnQuotaError: true },
+          cacheName: 'media-image',
+          expiration: { maxEntries: MEDIA_IMAGE_CACHE_MAX_ENTRIES, purgeOnQuotaError: true },
           cacheableResponse: { statuses: [200] },
         },
       },
