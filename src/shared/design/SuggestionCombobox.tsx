@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { CheckIcon, ChevronDownIcon } from '@/shared/design/icon'
-import { EASE } from '@/shared/design/motion'
+import { DROP_UP } from '@/shared/design/motion'
+import { useDismiss } from '@/shared/design/useDismiss'
 import { useScrollActivity } from '@/shared/design/useScrollActivity'
 
 const LIST_MAX = 300
@@ -49,12 +50,8 @@ export function SuggestionCombobox({
     setOpen(true)
   }
 
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: PointerEvent) => !rootRef.current?.contains(e.target as Node) && setOpen(false)
-    document.addEventListener('pointerdown', onDown)
-    return () => document.removeEventListener('pointerdown', onDown)
-  }, [open])
+  const close = useCallback(() => setOpen(false), [])
+  useDismiss(rootRef, open, close)
 
   useEffect(() => setHighlight(0), [filter])
 
@@ -79,7 +76,7 @@ export function SuggestionCombobox({
 
   const choose = (s: Suggestion) => {
     onChange(s.label)
-    setOpen(false)
+    close()
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -96,7 +93,7 @@ export function SuggestionCombobox({
     } else if (e.key === 'Escape' && open) {
       // Close the list only; keep the dialog open
       e.stopPropagation()
-      setOpen(false)
+      close()
     }
   }
 
@@ -125,7 +122,7 @@ export function SuggestionCombobox({
         />
         <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2">
           {isNew && (
-            <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-600">
+            <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[11px] font-medium text-accent-strong">
               {t.newBadge}
             </span>
           )}
@@ -135,8 +132,8 @@ export function SuggestionCombobox({
             aria-label={open ? t.collapse : t.expand}
             // Keep focus in the input so typing continues after toggling
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => (open ? setOpen(false) : openList())}
-            className="pointer-events-auto -mr-1.5 flex h-7 w-7 items-center justify-center rounded-md text-subtle transition-colors hover:bg-stone-100 hover:text-stone-700"
+            onClick={() => (open ? close() : openList())}
+            className="button-quiet pointer-events-auto -mr-1.5 h-7 w-7 rounded-md"
           >
             <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
           </button>
@@ -149,13 +146,10 @@ export function SuggestionCombobox({
             ref={listRef}
             id={listId}
             role="listbox"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.15, ease: EASE }}
+            {...DROP_UP}
             style={{ maxHeight }}
             onScroll={scroll.onScroll}
-            className={`${scroll.scrollClass} absolute inset-x-0 z-10 bottom-full mb-1.5 overflow-y-auto rounded-xl bg-surface p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.2)] ring-1 ring-border/80`}
+            className={`${scroll.scrollClass} menu-panel absolute inset-x-0 bottom-full z-10 mb-1.5 overflow-y-auto`}
           >
             {options.map((s, i) => {
               const active = i === highlight
@@ -169,14 +163,14 @@ export function SuggestionCombobox({
                   onMouseEnter={() => setHighlight(i)}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => choose(s)}
-                  className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-100 ${active ? 'bg-stone-100' : ''}`}
+                  className={`flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-100 ${active ? 'bg-fill' : ''}`}
                 >
                   {s.thumbnail}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-stone-800">{s.label}</span>
+                    <span className="block truncate text-sm font-medium text-foreground">{s.label}</span>
                     <span className="block truncate text-xs text-subtle">{s.meta}</span>
                   </span>
-                  {selected && <CheckIcon className="h-4 w-4 shrink-0 text-stone-700" />}
+                  {selected && <CheckIcon className="h-4 w-4 shrink-0 text-strong" />}
                 </li>
               )
             })}

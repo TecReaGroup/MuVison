@@ -1,12 +1,38 @@
 @theme {
   --font-sans: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+
   --color-canvas: #f7f6f3;
   --color-surface: #ffffff;
   --color-surface-muted: var(--color-stone-50);
+  /* Quiet fill: selected rows, segmented tracks, hover behind inline icon buttons */
+  --color-fill: var(--color-stone-100);
+  /* Media placeholders; at /60 it is the hover of ghost buttons on the canvas */
+  --color-fill-strong: var(--color-stone-200);
+  /* Dark overlay behind dialogs and on top of thumbnails */
+  --color-scrim: var(--color-stone-950);
+
   --color-foreground: var(--color-stone-900);
+  --color-strong: var(--color-stone-700);
   --color-secondary: var(--color-stone-600);
   --color-muted: var(--color-stone-500);
   --color-subtle: var(--color-stone-400);
+
   --color-border: var(--color-stone-200);
+  --color-border-strong: var(--color-stone-300);
+  --color-focus: var(--color-stone-400);
+
   --color-accent: var(--color-amber-500);
+  --color-accent-strong: var(--color-amber-600);
+  --color-accent-soft: var(--color-amber-50);
+  --color-danger: var(--color-red-500);
+  --color-danger-strong: var(--color-red-600);
+  --color-danger-soft: var(--color-red-50);
+  --color-danger-ring: var(--color-red-300);
+  --color-success: var(--color-emerald-600);
+  --color-success-soft: var(--color-emerald-50);
+
+  --shadow-raised: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-popover: 0 16px 40px -12px rgba(0, 0, 0, 0.18);
+  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -16px rgba(0, 0, 0, 0.12);
+  --shadow-dialog: 0 24px 60px -20px rgba(0, 0, 0, 0.35);
 }

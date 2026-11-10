@@ -1,53 +1,29 @@
-import { useEffect } from 'react'
-import type { Video } from './catalog'
-import { useCatalog } from './CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
-import { ArrowLeftIcon } from '@/shared/design/icon'
-import { VideoGrid } from './VideoGrid'
+import { useCatalog } from './CatalogProvider'
+import { CatalogDetail, type DetailNavigation } from './CatalogDetail'
 
-type DetailProps = {
-  id: string
-  backLabel: string
-  onBack: () => void
-  onPlay: (video: Video) => void
-  onAuthor: (id: string) => void
-}
-
-export function AlbumDetail({ id, backLabel, onBack, onPlay, onAuthor }: DetailProps) {
+export function AlbumDetail({ id, ...navigation }: DetailNavigation & { id: string }) {
+  const { t } = useI18n()
   const { videos, albums } = useCatalog()
-  // An edit can move this album's last video away, after which the page has nothing to show
   const album = albums.find((candidate) => candidate.id === id)
   const items = videos.filter((video) => video.albumId === id)
-  const { t } = useI18n()
-  useEffect(() => {
-    if (!album) onBack()
-  }, [album, onBack])
-  if (!album) return null
   return (
-    <div>
-      <button
-        onClick={onBack}
-        className="group mb-4 flex items-center gap-2 text-sm text-muted md:mb-6 transition-colors duration-300 hover:text-foreground"
-      >
-        <ArrowLeftIcon className="h-4 w-4 transition-transform duration-300 ease-out group-hover:-translate-x-1" />
-        {backLabel}
-      </button>
-
-      <div className="mb-6 flex items-center gap-4 border-b border-border/80 pb-6 md:mb-10 md:gap-6 md:pb-10">
-        <div>
-          <img
-            src={items[0]?.cover}
-            alt={album.title}
-            className="aspect-video w-28 rounded-lg object-cover sm:w-36 md:w-48 md:rounded-xl"
-          />
-        </div>
-        <div>
-          <p className="text-xs font-medium tracking-wider text-subtle">{t.album}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">{album.title}</h1>
-        </div>
-      </div>
-
-      <VideoGrid items={items} onPlay={onPlay} onAuthor={onAuthor} />
-    </div>
+    <CatalogDetail
+      {...navigation}
+      videos={items}
+      heading={
+        album && {
+          kind: t.album,
+          title: album.title,
+          media: (
+            <img
+              src={items[0]?.cover}
+              alt={album.title}
+              className="aspect-video w-28 rounded-lg object-cover sm:w-36 md:w-48 md:rounded-xl"
+            />
+          ),
+        }
+      }
+    />
   )
 }

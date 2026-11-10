@@ -74,7 +74,7 @@ function EndScreen({ next, onNext }: { next?: CatalogVideo; onNext: () => void }
             <button
               // play() on an ended video restarts it from the beginning
               onClick={() => player.play().catch(() => undefined)}
-              className="flex items-center gap-2 rounded-full bg-surface/15 px-5 py-2.5 text-sm text-white ring-1 ring-white/20 transition hover:bg-surface/25"
+              className="flex items-center gap-2 rounded-full bg-white/15 px-5 py-2.5 text-sm text-white ring-1 ring-white/20 transition hover:bg-white/25"
             >
               <ReplayIcon className="h-4 w-4" />
               {t.replay}

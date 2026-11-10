@@ -11,7 +11,7 @@ export function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 flex items-center gap-1 text-[13px] font-medium text-stone-700">
+      <label htmlFor={id} className="mb-1.5 flex items-center gap-1 text-[13px] font-medium text-strong">
         {label}
         {required && <span className="text-accent">*</span>}
       </label>

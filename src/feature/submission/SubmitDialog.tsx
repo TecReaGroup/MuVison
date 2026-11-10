@@ -1,13 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { AnimatePresence } from 'motion/react'
+import type { VideoTagInput } from '@/feature/catalog/catalog'
 import { useCatalog } from '@/feature/catalog/CatalogProvider'
+import { VideoTagFields, areVideoTagsComplete } from '@/feature/catalog/VideoTagFields'
 import { useI18n, type TranslationDictionary } from '@/shared/i18n/I18nProvider'
 import { ApiError } from '@/shared/http/requestJson'
 import { CheckIcon, CloseIcon, LinkIcon, SpinnerIcon } from '@/shared/design/icon'
-import { Modal } from '@/shared/design/Modal'
-import { Field } from '@/shared/design/Field'
-import { SuggestionCombobox } from '@/shared/design/SuggestionCombobox'
-import { useAlbumSuggestions, useCreatorSuggestions } from '@/feature/catalog/catalogSuggestion'
+import { Modal, ModalFooter, ModalHeader } from '@/shared/design/Modal'
 import {
   createSubmission,
   fetchSubmissionJob,
@@ -18,6 +17,7 @@ import {
 } from './submissionApi'
 
 const JOB_POLL_INTERVAL_MS = 2000
+const EMPTY_TAGS: VideoTagInput = { title: '', creator: '', album: '' }
 type Step = 'input' | 'form' | 'done'
 
 function previewErrorText(error: unknown, t: TranslationDictionary) {
@@ -39,6 +39,13 @@ function jobStatusText(job: SubmissionJob, t: TranslationDictionary) {
   }
 }
 
+const JOB_BADGE: Record<SubmissionJob['status'], { className: string; Icon: typeof CheckIcon }> = {
+  downloading: { className: 'bg-fill text-subtle', Icon: SpinnerIcon },
+  saving: { className: 'bg-fill text-subtle', Icon: SpinnerIcon },
+  saved: { className: 'bg-success-soft text-success', Icon: CheckIcon },
+  failed: { className: 'bg-danger-soft text-danger', Icon: CloseIcon },
+}
+
 export default function SubmitDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return <AnimatePresence>{open && <Dialog onClose={onClose} />}</AnimatePresence>
 }
@@ -50,24 +57,12 @@ function Dialog({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [parsed, setParsed] = useState<SubmissionPreview | null>(null)
-  const [title, setTitle] = useState('')
-  const [author, setAuthor] = useState('')
-  const [album, setAlbum] = useState('')
+  const [tags, setTags] = useState(EMPTY_TAGS)
   const [job, setJob] = useState<SubmissionJob | null>(null)
   const { refresh: refreshCatalog } = useCatalog()
-  const albumSuggestions = useAlbumSuggestions()
-  const creatorSuggestions = useCreatorSuggestions()
   const urlRef = useRef<HTMLInputElement>(null)
   const albumRef = useRef<HTMLInputElement>(null)
-  const ids = {
-    title: useId(),
-    url: useId(),
-    name: useId(),
-    author: useId(),
-    authorList: useId(),
-    album: useId(),
-    albumList: useId(),
-  }
+  const ids = { heading: useId(), url: useId() }
 
   useEffect(() => {
     if (step === 'input') urlRef.current?.focus()
@@ -98,8 +93,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
     try {
       const preview = await fetchSubmissionPreview(url)
       setParsed(preview)
-      setTitle(preview.title)
-      setAuthor(preview.creator)
+      setTags({ title: preview.title, creator: preview.creator, album: '' })
       setStep('form')
     } catch (previewError) {
       setError(previewErrorText(previewError, t))
@@ -110,11 +104,11 @@ function Dialog({ onClose }: { onClose: () => void }) {
 
   const submitVideo = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!album.trim() || !title.trim() || !author.trim()) return
+    if (!areVideoTagsComplete(tags)) return
     setError('')
     setLoading(true)
     try {
-      setJob(await createSubmission({ url, title, creator: author, album }))
+      setJob(await createSubmission({ url, ...tags }))
       setStep('done')
     } catch (submitError) {
       setError(submitError instanceof ApiError && submitError.status === 409 ? t.alreadySubmitted : t.submitFailed)
@@ -127,23 +121,20 @@ function Dialog({ onClose }: { onClose: () => void }) {
     setStep('input')
     setUrl('')
     setParsed(null)
-    setTitle('')
-    setAuthor('')
-    setAlbum('')
+    setTags(EMPTY_TAGS)
     setJob(null)
     setError('')
   }
 
-  const canSubmit = !!album.trim() && !!title.trim() && !!author.trim() && !loading
+  const canSubmit = areVideoTagsComplete(tags) && !loading
 
   return (
-    <Modal labelledBy={ids.title} onClose={onClose}>
-      <header className="px-6 pt-4 sm:pt-6">
-        <h2 id={ids.title} className="text-lg font-semibold leading-tight tracking-tight">
-          {step === 'done' ? t.submitted : t.submitVideo}
-        </h2>
-        <p className="mt-1.5 text-sm text-muted">{step === 'done' ? t.submittedDesc : t.submitDesc}</p>
-      </header>
+    <Modal labelledBy={ids.heading} onClose={onClose}>
+      <ModalHeader
+        id={ids.heading}
+        title={step === 'done' ? t.submitted : t.submitVideo}
+        description={step === 'done' ? t.submittedDesc : t.submitDesc}
+      />
 
       {step === 'input' && (
         <form onSubmit={parseLink}>
@@ -152,11 +143,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
               {t.urlLabel}
             </label>
             <div className="relative">
-              <div
-                className={`flex h-12 items-center gap-3 rounded-xl bg-surface-muted pl-4 ${url ? 'pr-1.5' : 'pr-4'} ring-1 transition-[box-shadow,background-color] focus-within:bg-surface ${
-                  error ? 'ring-red-300' : 'ring-border focus-within:ring-stone-400'
-                }`}
-              >
+              <div className={`input-shell h-12 gap-3 pl-4 ${url ? 'pr-1.5' : 'pr-4'}`}>
                 <LinkIcon className="h-4 w-4 shrink-0 text-subtle" />
                 <input
                   ref={urlRef}
@@ -180,7 +167,7 @@ function Dialog({ onClose }: { onClose: () => void }) {
                       urlRef.current?.focus()
                     }}
                     aria-label={t.clear}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-subtle transition-colors hover:bg-stone-100 hover:text-stone-700"
+                    className="button-quiet h-9 w-9 rounded-lg"
                   >
                     <CloseIcon className="h-4 w-4" />
                   </button>
@@ -188,26 +175,26 @@ function Dialog({ onClose }: { onClose: () => void }) {
               </div>
 
               {/* Error floats under the input so it never shifts the layout */}
-              {error && <p className="absolute inset-x-0 top-full mt-2 text-[13px] text-red-500">{error}</p>}
+              {error && <p className="form-error absolute inset-x-0 top-full mt-2">{error}</p>}
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-2 px-6 pb-6">
+          <ModalFooter>
             <button type="button" onClick={onClose} className="button-secondary">
               {t.cancel}
             </button>
             <button type="submit" disabled={!url.trim() || loading} className="button-primary min-w-20">
               {loading ? <SpinnerIcon className="h-4 w-4" /> : t.parse}
             </button>
-          </div>
+          </ModalFooter>
         </form>
       )}
 
       {step === 'form' && parsed && (
         <form onSubmit={submitVideo}>
           <div className="px-6 pb-6 pt-5">
-            <div className="flex items-center gap-3.5 rounded-xl bg-surface-muted p-2.5 ring-1 ring-border/70">
-              <span className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-lg bg-stone-200">
+            <div className="mb-5 flex items-center gap-3.5 rounded-xl bg-surface-muted p-2.5 ring-1 ring-border/70">
+              <span className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-lg bg-fill-strong">
                 <img
                   src={parsed.thumbnail}
                   alt=""
@@ -227,97 +214,68 @@ function Dialog({ onClose }: { onClose: () => void }) {
               </div>
             </div>
 
-            <div className="mt-5 space-y-4">
-              <Field id={ids.name} label={t.fieldTitle} required>
-                <input
-                  id={ids.name}
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                  className="input-control"
-                />
-              </Field>
-              <Field id={ids.author} label={t.fieldAuthor} required>
-                <SuggestionCombobox
-                  id={ids.author}
-                  listId={ids.authorList}
-                  value={author}
-                  onChange={setAuthor}
-                  suggestions={creatorSuggestions}
-                  placeholder={t.creatorPlaceholder}
-                />
-              </Field>
-              <Field id={ids.album} label={t.fieldAlbum} required>
-                <SuggestionCombobox
-                  inputRef={albumRef}
-                  id={ids.album}
-                  listId={ids.albumList}
-                  value={album}
-                  onChange={setAlbum}
-                  suggestions={albumSuggestions}
-                  placeholder={t.albumPlaceholder}
-                />
-              </Field>
-            </div>
-            {error && <p className="mt-4 text-[13px] text-red-500">{error}</p>}
+            <VideoTagFields tags={tags} onChange={setTags} albumInputRef={albumRef} />
+            {error && <p className="form-error mt-4">{error}</p>}
           </div>
 
-          <div className="flex items-center justify-between gap-2 px-6 pb-6">
+          <ModalFooter>
             <button type="button" onClick={onClose} className="button-secondary">
               {t.cancel}
             </button>
             <button type="submit" disabled={!canSubmit} className="button-primary min-w-20">
               {loading ? <SpinnerIcon className="h-4 w-4" /> : t.submit}
             </button>
-          </div>
+          </ModalFooter>
         </form>
       )}
 
-      {step === 'done' && job && (
-        <div>
-          <div className="px-6 pb-6 pt-5">
-            <div className="flex items-center gap-3.5 rounded-xl bg-surface-muted p-2.5 ring-1 ring-border/70">
-              <span
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                  job.status === 'saved'
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : job.status === 'failed'
-                      ? 'bg-red-50 text-red-500'
-                      : 'bg-stone-100 text-subtle'
-                }`}
-              >
-                {job.status === 'saved' ? (
-                  <CheckIcon className="h-5 w-5" />
-                ) : job.status === 'failed' ? (
-                  <CloseIcon className="h-5 w-5" />
-                ) : (
-                  <SpinnerIcon className="h-5 w-5" />
-                )}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{title}</p>
-                <p className="truncate text-xs text-muted">
-                  {author} · {album}
-                </p>
-                <p
-                  title={job.error ?? undefined}
-                  className={`mt-1 truncate text-xs ${job.status === 'failed' ? 'text-red-500' : 'text-subtle'}`}
-                >
-                  {jobStatusText(job, t)}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between gap-2 px-6 pb-6">
-            <button onClick={reset} className="button-secondary">
-              {t.submitAnother}
-            </button>
-            <button onClick={onClose} className="button-primary">
-              {t.done}
-            </button>
+      {step === 'done' && job && <SubmissionStatus job={job} tags={tags} onReset={reset} onClose={onClose} />}
+    </Modal>
+  )
+}
+
+function SubmissionStatus({
+  job,
+  tags,
+  onReset,
+  onClose,
+}: {
+  job: SubmissionJob
+  tags: VideoTagInput
+  onReset: () => void
+  onClose: () => void
+}) {
+  const { t } = useI18n()
+  const badge = JOB_BADGE[job.status]
+  return (
+    <div>
+      <div className="px-6 pb-6 pt-5">
+        <div className="flex items-center gap-3.5 rounded-xl bg-surface-muted p-2.5 ring-1 ring-border/70">
+          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${badge.className}`}>
+            <badge.Icon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{tags.title}</p>
+            <p className="truncate text-xs text-muted">
+              {tags.creator} · {tags.album}
+            </p>
+            <p
+              title={job.error ?? undefined}
+              className={`mt-1 truncate text-xs ${job.status === 'failed' ? 'text-danger' : 'text-subtle'}`}
+            >
+              {jobStatusText(job, t)}
+            </p>
           </div>
         </div>
-      )}
-    </Modal>
+      </div>
+      <ModalFooter>
+        <button onClick={onReset} className="button-secondary">
+          {t.submitAnother}
+        </button>
+        <button onClick={onClose} className="button-primary">
+          {t.done}
+        </button>
+      </ModalFooter>
+    </div>
   )
 }

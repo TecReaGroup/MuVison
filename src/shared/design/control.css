@@ -1,14 +1,42 @@
 @layer components {
   .button-primary {
-    @apply flex h-10 items-center justify-center rounded-xl bg-foreground px-5 text-sm font-medium text-white transition-colors hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-subtle;
+    @apply flex h-10 items-center justify-center rounded-xl bg-foreground px-5 text-sm font-medium text-white transition-colors hover:bg-strong disabled:cursor-not-allowed disabled:bg-fill-strong disabled:text-subtle;
   }
 
   .button-secondary {
     @apply h-10 rounded-xl bg-surface px-4 text-sm font-medium text-secondary ring-1 ring-border transition-colors hover:bg-surface-muted hover:text-foreground;
   }
 
+  /* Square icon button sitting on the canvas (header, page toolbars) */
+  .button-icon {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-secondary transition-colors duration-200 hover:bg-fill-strong/60 hover:text-foreground;
+  }
+
+  /* Icon button nested inside a field or panel; the caller sets its size and radius */
+  .button-quiet {
+    @apply flex shrink-0 items-center justify-center text-subtle transition-colors hover:bg-fill hover:text-strong;
+  }
+
   .input-control {
-    @apply h-11 w-full rounded-xl bg-surface-muted px-3.5 text-base outline-none ring-1 ring-border transition-[box-shadow,background-color] placeholder:text-subtle focus:bg-surface focus:ring-stone-400 sm:h-10 sm:text-sm;
+    @apply h-11 w-full rounded-xl bg-surface-muted px-3.5 text-base outline-none ring-1 ring-border transition-[box-shadow,background-color] placeholder:text-subtle focus:bg-surface focus:ring-focus sm:h-10 sm:text-sm;
+  }
+
+  /* Field frame around a bare <input> plus adornments; turns red while that input is aria-invalid */
+  .input-shell {
+    @apply flex items-center rounded-xl bg-surface-muted ring-1 ring-border transition-[box-shadow,background-color] focus-within:bg-surface focus-within:ring-focus has-[[aria-invalid=true]]:ring-danger-ring!;
+  }
+
+  .form-error {
+    @apply text-[13px] text-danger;
+  }
+
+  /* Dropdown surface and its rows; the caller lays out the row content */
+  .menu-panel {
+    @apply rounded-xl bg-surface p-1 shadow-popover ring-1 ring-border/80;
+  }
+
+  .menu-option {
+    @apply w-full rounded-lg py-2 text-[13px] text-secondary transition-colors duration-200 hover:bg-surface-muted hover:text-foreground aria-selected:bg-fill aria-selected:font-medium aria-selected:text-foreground;
   }
 }
 

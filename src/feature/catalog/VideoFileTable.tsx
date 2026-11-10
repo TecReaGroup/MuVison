@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { SpinnerIcon } from '@/shared/design/icon'
+import { useScrollActivity } from '@/shared/design/useScrollActivity'
 import { fetchVideoFiles, formatDuration, readVideoFileSnapshot, type VideoFile } from './catalog'
 import { useCatalog } from './CatalogProvider'
 
@@ -73,6 +74,7 @@ export function VideoFileTable() {
   const { videos } = useCatalog()
   const [state, setState] = useState<LoadState>(initialLoadState)
   const [attempt, setAttempt] = useState(0)
+  const tableScroll = useScrollActivity()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -100,7 +102,7 @@ export function VideoFileTable() {
         {t.videoFilesLoadFailed}
         <button
           onClick={() => setAttempt((n) => n + 1)}
-          className="rounded-lg px-3 py-1.5 font-medium text-foreground ring-1 ring-border transition-colors hover:bg-surface-muted"
+          className="button-secondary"
         >
           {t.retry}
         </button>
@@ -122,7 +124,11 @@ export function VideoFileTable() {
           <VideoFileCard key={file.id} file={file} />
         ))}
       </ul>
-      <div className="hidden overflow-x-auto rounded-xl ring-1 ring-border sm:block">
+      {/* Horizontal-only scroller: drop the vertical gutter .thin-scroll reserves (unlayered, hence `!`) */}
+      <div
+        onScroll={tableScroll.onScroll}
+        className={`${tableScroll.scrollClass} hidden overflow-x-auto rounded-xl [scrollbar-gutter:auto]! ring-1 ring-border sm:block`}
+      >
         <table className="w-full min-w-[920px] text-left text-[13px]">
           <thead className="bg-surface-muted text-xs text-muted">
             <tr>

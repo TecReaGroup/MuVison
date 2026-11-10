@@ -14,6 +14,7 @@ import {
   SettingIcon,
   VideoIcon,
 } from '@/shared/design/icon'
+import { Wordmark } from '@/shared/design/Brand'
 import { Modal } from '@/shared/design/Modal'
 import { SPRING } from '@/shared/design/motion'
 
@@ -46,7 +47,7 @@ export function SettingButton() {
         onClick={() => setOpen(true)}
         aria-label={t.setting}
         title={t.setting}
-        className="flex h-9 w-9 items-center justify-center rounded-xl text-secondary transition-colors duration-200 hover:bg-stone-200/60 hover:text-foreground"
+        className="button-icon"
       >
         <SettingIcon className="h-5 w-5" />
       </button>
@@ -72,7 +73,7 @@ function SettingDialog({ onClose }: { onClose: () => void }) {
           <h2 id={headingId} className="px-1 text-lg font-semibold leading-8 tracking-tight sm:mb-4 sm:px-3">
             {t.setting}
           </h2>
-          <nav className="mt-3 flex gap-1 rounded-xl bg-stone-100 p-1 sm:mt-0 sm:flex-col sm:bg-transparent sm:p-0">
+          <nav className="mt-3 flex gap-1 rounded-xl bg-fill p-1 sm:mt-0 sm:flex-col sm:bg-transparent sm:p-0">
             {SETTING_SECTIONS.map(({ key, label, Icon }) => {
               const selected = key === activeKey
               return (
@@ -82,7 +83,7 @@ function SettingDialog({ onClose }: { onClose: () => void }) {
                   aria-current={selected ? 'page' : undefined}
                   // Phones: equal-width segmented tabs; desktop: a vertical list
                   className={`relative flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors duration-300 sm:flex-none sm:justify-start sm:gap-3 sm:rounded-xl sm:px-3 ${
-                    selected ? 'text-white' : 'text-secondary hover:bg-stone-200/60 hover:text-foreground'
+                    selected ? 'text-white' : 'text-secondary hover:bg-fill-strong/60 hover:text-foreground'
                   }`}
                 >
                   {selected && (
@@ -104,7 +105,7 @@ function SettingDialog({ onClose }: { onClose: () => void }) {
         <button
           onClick={onClose}
           aria-label={t.close}
-          className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-subtle transition-colors hover:bg-stone-100 hover:text-foreground sm:right-5 sm:top-5"
+          className="button-quiet absolute right-3 top-3 z-10 rounded-lg p-1.5 sm:right-5 sm:top-5"
         >
           <CloseIcon className="h-5 w-5" />
         </button>
@@ -137,7 +138,7 @@ function LanguagePanel() {
             onClick={() => setLang(key)}
             className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm ring-1 transition-[box-shadow,background-color] duration-200 ${
               selected
-                ? 'bg-surface font-medium text-foreground ring-stone-400 shadow-[0_4px_16px_rgba(0,0,0,0.06)]'
+                ? 'bg-surface font-medium text-foreground shadow-raised ring-focus'
                 : 'text-secondary ring-border hover:bg-surface-muted hover:text-foreground'
             }`}
           >
@@ -155,9 +156,7 @@ function AboutPanel() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center pb-16 text-center">
       <LogoMark className="h-20 w-20" />
-      <p className="mt-5 text-3xl font-semibold leading-none tracking-[-0.02em]">
-        Mu<span className="text-subtle">Vision</span>
-      </p>
+      <Wordmark className="mt-5 block text-3xl" />
       <p className="mt-2.5 text-sm text-muted">{t.appTagline}</p>
       <p className="mt-6 max-w-xl text-[15px] leading-7 text-secondary">{t.appIntro}</p>
       <a

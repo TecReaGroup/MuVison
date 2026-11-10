@@ -49,7 +49,7 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
           onClick={onBack}
           aria-label={t.back}
           title={t.back}
-          className="group -ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted transition-colors duration-200 hover:bg-stone-200/60 hover:text-foreground"
+          className="button-icon group -ml-2 text-muted"
         >
           <ArrowLeftIcon className="h-5 w-5 transition-transform duration-200 ease-out group-hover:-translate-x-0.5" />
         </button>
@@ -84,7 +84,7 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
                 <img
                   src={author.avatar}
                   alt=""
-                  className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-stone-100 transition-transform sm:h-12 sm:w-12 duration-300 ease-out group-hover:scale-105"
+                  className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-fill transition-transform sm:h-12 sm:w-12 duration-300 ease-out group-hover:scale-105"
                 />
                 <span className="min-w-0">
                   <span className="block truncate font-medium leading-tight transition-colors duration-300 group-hover:text-secondary">
@@ -97,7 +97,7 @@ export default function WatchPage({ video, onBack, onPlay, onAuthor, onAlbum }: 
               </button>
               <button
                 onClick={() => onAuthor(author.id)}
-                className="group flex shrink-0 items-center rounded-full bg-stone-200/55 px-4 py-2 text-sm sm:px-5 sm:py-2.5 font-medium text-stone-700 transition-colors duration-200 hover:bg-stone-200 hover:text-foreground"
+                className="group flex shrink-0 items-center rounded-full bg-fill-strong/60 px-4 py-2 text-sm font-medium text-strong transition-colors duration-200 hover:bg-fill-strong hover:text-foreground sm:px-5 sm:py-2.5"
               >
                 {t.viewProfile}
                 {/* Arrow reveals on hover/focus only */}

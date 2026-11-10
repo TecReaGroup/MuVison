@@ -1,5 +1,5 @@
 import { VIDEO_GRID_CLASS } from '@/feature/catalog/VideoGrid'
-import { AppBrand } from './AppBrand'
+import { AppBrand } from '@/shared/design/Brand'
 
 const PLACEHOLDER_CARD_COUNT = 8
 const NAV_ITEM_COUNT = 3
@@ -9,7 +9,7 @@ const TAB_ITEM_COUNT = 4
 const repeat = (count: number) => Array.from({ length: count }, (_, i) => i)
 
 const Bone = ({ className }: { className: string }) => (
-  <div className={`bg-stone-200/80 motion-safe:animate-pulse ${className}`} />
+  <div className={`bg-fill-strong/80 motion-safe:animate-pulse ${className}`} />
 )
 
 /**

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { ArrowRightIcon, ChevronDownIcon, ListSortAscendingIcon, ListSortDescendingIcon } from '@/shared/design/icon'
-import { EASE } from '@/shared/design/motion'
+import { DROP_DOWN, EASE } from '@/shared/design/motion'
+import { useDismiss } from '@/shared/design/useDismiss'
 import type { CatalogSection } from './CatalogPage'
 
 export type SortField = 'date' | 'name'
@@ -56,9 +57,7 @@ function SortOption({
         role="option"
         aria-selected={active}
         onClick={onSelect}
-        className={`grid w-full grid-cols-[1fr_16px] items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors duration-200 ${
-          active ? 'bg-stone-100 font-medium text-foreground' : 'text-secondary hover:bg-surface-muted hover:text-foreground'
-        }`}
+        className="menu-option grid grid-cols-[1fr_16px] items-center gap-2 px-2.5 text-left"
       >
         <span>{label}</span>
         {active && (
@@ -83,17 +82,8 @@ export function CatalogSortSwitch({ sort, onSort }: { sort: CatalogSort; onSort:
   const currentField = SORT_FIELDS.find((s) => s.field === sort.field)!
   const DirectionIcon = sort.direction === 'ascending' ? ListSortAscendingIcon : ListSortDescendingIcon
 
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    document.addEventListener('pointerdown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
+  const close = useCallback(() => setOpen(false), [])
+  useDismiss(ref, open, close)
 
   return (
     <div ref={ref} className="relative shrink-0">
@@ -102,8 +92,8 @@ export function CatalogSortSwitch({ sort, onSort }: { sort: CatalogSort; onSort:
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t.sortBy}
-        className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors duration-200 hover:bg-stone-200/60 hover:text-foreground ${
-          open ? 'bg-stone-200/60 text-foreground' : 'text-secondary'
+        className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors duration-200 hover:bg-fill-strong/60 hover:text-foreground ${
+          open ? 'bg-fill-strong/60 text-foreground' : 'text-secondary'
         }`}
       >
         <DirectionIcon className="h-4 w-4 shrink-0" />
@@ -119,13 +109,7 @@ export function CatalogSortSwitch({ sort, onSort }: { sort: CatalogSort; onSort:
 
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.15, ease: EASE }}
-            className="absolute right-0 top-full z-40 mt-1.5 w-32 rounded-xl bg-surface p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18)] ring-1 ring-border/80"
-          >
+          <motion.div {...DROP_DOWN} className="menu-panel absolute right-0 top-full z-40 mt-1.5 w-32">
             <ul role="listbox" aria-label={t.sortBy}>
               {SORT_FIELDS.map(({ field, label, defaultDirection }) => {
                 const active = sort.field === field

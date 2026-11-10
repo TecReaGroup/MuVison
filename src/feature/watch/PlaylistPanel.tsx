@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { formatDuration, type Video } from '@/feature/catalog/catalog'
+import type { Video } from '@/feature/catalog/catalog'
+import { DurationBadge } from '@/feature/catalog/DurationBadge'
 import { useCatalog } from '@/feature/catalog/CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { ArrowRightIcon } from '@/shared/design/icon'
@@ -82,7 +83,7 @@ export function PlaylistPanel({
   } 100%)`
 
   return (
-    <section className="flex flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-16px_rgba(0,0,0,0.12)] ring-1 ring-border/70 max-xl:max-h-[480px] xl:absolute xl:inset-0">
+    <section className="flex flex-col overflow-hidden rounded-2xl bg-surface shadow-panel ring-1 ring-border/70 max-xl:max-h-[480px] xl:absolute xl:inset-0">
       <header className="shrink-0 px-4 pb-3.5 pt-4 sm:px-5 sm:pb-4 sm:pt-5">
         <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-subtle">{t.album}</p>
         <div className="mt-1.5 flex items-center justify-between gap-3">
@@ -96,7 +97,7 @@ export function PlaylistPanel({
         </div>
       </header>
 
-      <div className="mx-4 h-px shrink-0 bg-stone-100 sm:mx-5" />
+      <div className="mx-4 h-px shrink-0 bg-fill sm:mx-5" />
 
       <div
         ref={listRef}
@@ -141,13 +142,13 @@ function PlaylistItem({
       // Highlight and index/indicator swap share one 200ms fade so they always change together
       className={`group relative flex w-full items-center gap-3 rounded-xl p-2 pr-3 text-left text-foreground transition-[background-color,box-shadow] duration-200 ${
         active
-          ? 'bg-stone-100 shadow-[inset_0_0_0_1px_rgba(214,211,209,0.7)]'
-          : 'shadow-[inset_0_0_0_1px_rgba(214,211,209,0)] hover:bg-surface-muted'
+          ? 'bg-fill inset-ring inset-ring-border-strong/70'
+          : 'inset-ring inset-ring-transparent hover:bg-surface-muted'
       }`}
     >
       <span className="relative grid w-5 shrink-0 place-items-center text-xs font-medium tabular-nums">
         <span
-          className={`col-start-1 row-start-1 transition-opacity duration-200 ${active ? 'opacity-0' : 'text-subtle opacity-100 group-hover:text-stone-700'}`}
+          className={`col-start-1 row-start-1 transition-opacity duration-200 ${active ? 'opacity-0' : 'text-subtle opacity-100 group-hover:text-strong'}`}
         >
           {index}
         </span>
@@ -157,17 +158,13 @@ function PlaylistItem({
           <NowPlayingBars playing={active && playing} />
         </span>
       </span>
-      <span
-        className={`relative aspect-video w-28 shrink-0 sm:w-[132px] overflow-hidden rounded-lg bg-stone-200 ring-1 ring-black/5`}
-      >
-        <img src={video.cover} alt="" loading="lazy" className="h-full w-full object-cover " />
-        <span className="absolute bottom-1 right-1 rounded-md bg-stone-950/75 px-1.5 py-px text-[10px] font-medium tabular-nums text-white backdrop-blur-sm">
-          {formatDuration(video.durationSeconds)}
-        </span>
+      <span className="relative aspect-video w-28 shrink-0 overflow-hidden rounded-lg bg-fill-strong ring-1 ring-black/5 sm:w-[132px]">
+        <img src={video.cover} alt="" loading="lazy" className="h-full w-full object-cover" />
+        <DurationBadge seconds={video.durationSeconds} className="bottom-1 right-1 py-px text-[10px] backdrop-blur-sm" />
       </span>
       <span className="relative min-w-0 flex-1">
         <span className="line-clamp-2 text-[13px] font-medium leading-snug">{video.title}</span>
-        <span className={`mt-1 block truncate text-xs text-muted`}>{author.name}</span>
+        <span className="mt-1 block truncate text-xs text-muted">{author.name}</span>
       </span>
     </motion.button>
   )

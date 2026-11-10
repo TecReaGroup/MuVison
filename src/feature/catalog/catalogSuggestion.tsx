@@ -12,7 +12,7 @@ export function useAlbumSuggestions(): Suggestion[] {
       label: album.title,
       meta: `${album.authorIds.map((id) => authorById(id).name).join(' / ')} · ${t.videoCount(items.length)}`,
       thumbnail: (
-        <span className="aspect-video w-12 shrink-0 overflow-hidden rounded-md bg-stone-200 ring-1 ring-black/5">
+        <span className="aspect-video w-12 shrink-0 overflow-hidden rounded-md bg-fill-strong ring-1 ring-black/5">
           {items[0] && <img src={items[0].cover} alt="" className="h-full w-full object-cover" />}
         </span>
       ),

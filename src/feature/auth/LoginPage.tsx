@@ -3,7 +3,8 @@ import { motion, useAnimationControls } from 'motion/react'
 import { ApiError } from '@/shared/http/requestJson'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { LanguageSwitch } from '@/shared/i18n/LanguageSwitch'
-import { ArrowRightIcon, EyeIcon, EyeOffIcon, LockIcon, LogoMark, SpinnerIcon } from '@/shared/design/icon'
+import { AppBrand } from '@/shared/design/Brand'
+import { ArrowRightIcon, EyeIcon, EyeOffIcon, LockIcon, SpinnerIcon } from '@/shared/design/icon'
 import { EASE } from '@/shared/design/motion'
 import { login } from './authApi'
 
@@ -36,10 +37,7 @@ export function LoginPage({ onLogin }: { onLogin: () => void }) {
     <div className="flex h-dvh flex-col">
       <header className="flex h-14 shrink-0 items-center justify-between px-4 md:h-16 md:px-6">
         <div className="flex items-center gap-2.5">
-          <LogoMark className="h-8 w-8" />
-          <span className="text-[18px] font-semibold leading-none tracking-[-0.02em]">
-            Mu<span className="text-subtle">Vision</span>
-          </span>
+          <AppBrand />
         </div>
         <LanguageSwitch />
       </header>
@@ -57,20 +55,16 @@ export function LoginPage({ onLogin }: { onLogin: () => void }) {
             onSubmit={submit}
             className="rounded-2xl bg-surface px-6 py-7 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_40px_rgba(0,0,0,0.06)] ring-1 ring-border/80 sm:px-8 sm:py-9"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-fill text-strong">
               <LockIcon className="h-5 w-5" />
             </span>
             <h1 className="mt-5 text-[22px] font-semibold leading-tight tracking-[-0.02em]">{t.loginTitle}</h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">{t.loginDesc}</p>
 
-            <label htmlFor={inputId} className="mb-2 mt-7 block text-[13px] font-medium text-stone-700">
+            <label htmlFor={inputId} className="mb-2 mt-7 block text-[13px] font-medium text-strong">
               {t.passwordLabel}
             </label>
-            <div
-              className={`flex h-12 items-center rounded-xl bg-surface-muted pl-4 pr-1.5 ring-1 transition-[box-shadow,background-color] focus-within:bg-surface ${
-                error ? 'ring-red-300' : 'ring-border focus-within:ring-stone-400'
-              }`}
-            >
+            <div className="input-shell h-12 pl-4 pr-1.5">
               <input
                 id={inputId}
                 autoFocus
@@ -89,13 +83,13 @@ export function LoginPage({ onLogin }: { onLogin: () => void }) {
                 type="button"
                 onClick={() => setVisible((v) => !v)}
                 aria-label={visible ? t.hidePassword : t.showPassword}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-subtle transition-colors hover:bg-stone-100 hover:text-stone-700"
+                className="button-quiet h-9 w-9 rounded-lg"
               >
                 {visible ? <EyeOffIcon className="h-[18px] w-[18px]" /> : <EyeIcon className="h-[18px] w-[18px]" />}
               </button>
             </div>
             {/* Fixed-height slot so the error never shifts the button */}
-            <p id={`${inputId}-error`} role="alert" className="mt-2 h-5 text-[13px] text-red-500">
+            <p id={`${inputId}-error`} role="alert" className="form-error mt-2 h-5">
               {error}
             </p>
 

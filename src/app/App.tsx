@@ -10,9 +10,9 @@ import SubmitDialog from '@/feature/submission/SubmitDialog'
 import { SettingButton } from '@/feature/setting/SettingDialog'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { AlbumIcon, CloseIcon, PlusIcon, PlusSquareIcon, SearchIcon, UserIcon, VideoIcon } from '@/shared/design/icon'
+import { AppBrand } from '@/shared/design/Brand'
 import { SPRING } from '@/shared/design/motion'
 import { useScrollActivity } from '@/shared/design/useScrollActivity'
-import { AppBrand } from './AppBrand'
 import { HOME_ROUTE, useRouter } from './router'
 
 type Section = CatalogSection
@@ -89,7 +89,7 @@ export default function App() {
           {mobileSearch ? (
             // Mobile: search takes over the whole header
             <div className="flex flex-1 items-center gap-2 md:hidden">
-              <label className="flex h-10 flex-1 items-center gap-2.5 rounded-xl bg-surface px-3.5 ring-1 ring-border focus-within:ring-stone-400">
+              <label className="flex h-10 flex-1 items-center gap-2.5 rounded-xl bg-surface px-3.5 ring-1 ring-border focus-within:ring-focus">
                 <SearchIcon className="h-[18px] w-[18px] shrink-0 text-subtle" />
                 <input
                   autoFocus
@@ -104,7 +104,7 @@ export default function App() {
                   <button
                     onClick={() => setQuery('')}
                     aria-label={t.clear}
-                    className="-mr-1.5 rounded-lg p-1.5 text-subtle"
+                    className="button-quiet -mr-1.5 rounded-lg p-1.5"
                   >
                     <CloseIcon className="h-4 w-4" />
                   </button>
@@ -124,8 +124,8 @@ export default function App() {
           </button>
 
           <div className="hidden flex-1 justify-center md:flex">
-            <label className="group flex h-11 w-full max-w-xl items-center gap-3 rounded-full border border-border bg-surface px-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-[border-color,box-shadow] duration-200 focus-within:border-stone-400 focus-within:shadow-[0_6px_24px_rgba(0,0,0,0.07)]">
-              <SearchIcon className="h-[18px] w-[18px] text-subtle transition-colors duration-300 group-focus-within:text-stone-700" />
+            <label className="group flex h-11 w-full max-w-xl items-center gap-3 rounded-full border border-border bg-surface px-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-[border-color,box-shadow] duration-200 focus-within:border-focus focus-within:shadow-[0_6px_24px_rgba(0,0,0,0.07)]">
+              <SearchIcon className="h-[18px] w-[18px] text-subtle transition-colors duration-300 group-focus-within:text-strong" />
               <input
                 value={query}
                 onChange={(e) => onSearch(e.target.value)}
@@ -141,7 +141,7 @@ export default function App() {
                     transition={{ duration: 0.15 }}
                     onClick={() => setQuery('')}
                     aria-label={t.clear}
-                    className="rounded-full p-1 text-subtle transition-colors hover:bg-stone-100 hover:text-stone-700"
+                    className="button-quiet rounded-full p-1"
                   >
                     <CloseIcon className="h-4 w-4" />
                   </motion.button>
@@ -156,7 +156,7 @@ export default function App() {
               <button
                 onClick={() => setMobileSearch(true)}
                 aria-label={t.search}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-secondary transition-colors hover:bg-stone-200/60 md:hidden"
+                className="button-icon md:hidden"
               >
                 <SearchIcon className="h-5 w-5" />
               </button>
@@ -178,7 +178,7 @@ export default function App() {
                     key={key}
                     onClick={() => go(key)}
                     className={`relative flex w-full items-center gap-3.5 rounded-xl px-4 py-2.5 text-[15px] transition-colors duration-300 ${
-                      active ? 'text-white' : 'text-secondary hover:bg-stone-200/60 hover:text-foreground'
+                      active ? 'text-white' : 'text-secondary hover:bg-fill-strong/60 hover:text-foreground'
                     }`}
                   >
                     {active && (
@@ -200,7 +200,7 @@ export default function App() {
                 onClick={() => setSubmitOpen(true)}
                 aria-label={t.submitVideo}
                 title={t.submitVideo}
-                className="flex h-[42px] w-full items-center justify-center rounded-xl bg-stone-200/60 text-muted transition-colors duration-200 hover:bg-stone-200 hover:text-stone-800"
+                className="flex h-[42px] w-full items-center justify-center rounded-xl bg-fill-strong/60 text-muted transition-colors duration-200 hover:bg-fill-strong hover:text-strong"
               >
                 <PlusIcon className="h-5 w-5" />
               </button>
@@ -213,9 +213,8 @@ export default function App() {
             onScroll={mainScroll.onScroll}
             className={`${mainScroll.scrollClass} min-w-0 flex-1 overflow-y-auto`}
           >
-            {/* Resets text color: .thin-scroll uses `color` to paint its scrollbar thumb */}
             <div
-              className={`px-4 text-foreground md:pl-2 md:pr-6 ${watching ? 'pb-6 pt-3 md:pt-4' : 'pb-10 pt-5 md:pb-16 md:pt-6'}`}
+              className={`px-4 md:pl-2 md:pr-6 ${watching ? 'pb-6 pt-3 md:pt-4' : 'pb-10 pt-5 md:pb-16 md:pt-6'}`}
             >
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div

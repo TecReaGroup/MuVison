@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { formatDuration, type Author, type Video } from './catalog'
+import type { Author, Video } from './catalog'
+import { DurationBadge } from './DurationBadge'
 import { useCatalog } from './CatalogProvider'
 import { EditVideoDialog } from './EditVideoDialog'
 import { useI18n } from '@/shared/i18n/I18nProvider'
@@ -73,7 +74,7 @@ function VideoCard({
       <div className="relative">
         <button
           onClick={() => onPlay(video)}
-          className="relative block aspect-video w-full overflow-hidden rounded-xl bg-stone-200 "
+          className="relative block aspect-video w-full overflow-hidden rounded-xl bg-fill-strong"
         >
           <img
             src={video.cover}
@@ -82,34 +83,32 @@ function VideoCard({
             decoding="async"
             className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
           />
-          <div className="absolute inset-0 bg-stone-950/0 transition-colors duration-200 group-hover:bg-stone-950/10" />
+          <div className="absolute inset-0 bg-scrim/0 transition-colors duration-200 group-hover:bg-scrim/10" />
           {/* Wrapper centers; the inner chip scales, so the two transforms never fight */}
           <span className="absolute inset-0 flex items-center justify-center">
             <span className="flex h-12 w-12 scale-90 items-center justify-center rounded-full bg-surface/90 text-foreground opacity-0 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.35)] ring-1 ring-black/5 backdrop-blur transition-[opacity,transform] duration-200 ease-out group-hover:scale-100 group-hover:opacity-100">
               <PlayIcon className="h-[18px] w-[18px]" />
             </span>
           </span>
-          <span className="absolute bottom-2 right-2 rounded-md bg-stone-950/75 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-white">
-            {formatDuration(video.durationSeconds)}
-          </span>
+          <DurationBadge seconds={video.durationSeconds} className="bottom-2 right-2 py-0.5 text-[11px]" />
         </button>
         <button
           onClick={() => onEdit(video)}
           aria-label={t.editVideo}
           title={t.editVideo}
-          className="absolute right-2.5 top-2.5 flex h-8 w-8 -translate-y-1 items-center justify-center rounded-full bg-surface/85 text-stone-600 opacity-0 shadow-[0_4px_12px_-4px_rgba(0,0,0,0.3)] ring-1 ring-black/5 backdrop-blur transition-[opacity,transform,background-color,color] duration-200 ease-out hover:bg-surface hover:text-foreground focus-visible:translate-y-0 focus-visible:opacity-100 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:none)]:hidden"
+          className="absolute right-2.5 top-2.5 flex h-8 w-8 -translate-y-1 items-center justify-center rounded-full bg-surface/85 text-secondary opacity-0 shadow-[0_4px_12px_-4px_rgba(0,0,0,0.3)] ring-1 ring-black/5 backdrop-blur transition-[opacity,transform,background-color,color] duration-200 ease-out hover:bg-surface hover:text-foreground focus-visible:translate-y-0 focus-visible:opacity-100 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:none)]:hidden"
         >
           <PencilIcon className="h-[15px] w-[15px]" />
         </button>
       </div>
       <button onClick={() => onPlay(video)} className="mt-2 block text-left sm:mt-3">
-        <h3 className="line-clamp-1 text-sm font-medium sm:text-[15px] leading-snug text-foreground transition-colors duration-200 group-hover:text-secondary">
+        <h3 className="line-clamp-1 text-sm font-medium leading-snug text-foreground transition-colors duration-200 group-hover:text-secondary sm:text-[15px]">
           {video.title}
         </h3>
       </button>
       <button
         onClick={() => onAuthor(author.id)}
-        className="mt-0.5 text-xs text-muted transition-colors sm:mt-1 sm:text-sm duration-300 hover:text-foreground"
+        className="mt-0.5 text-xs text-muted transition-colors duration-300 hover:text-foreground sm:mt-1 sm:text-sm"
       >
         {author.name}
       </button>

@@ -161,9 +161,9 @@ function AlbumGrid({
           return (
             <motion.button key={al.id} {...GRID_ITEM} onClick={() => onAlbum(al.id)} className="group text-left">
               <div className="relative pt-2 sm:pt-3">
-                <div className="absolute inset-x-4 top-0 h-6 rounded-t-xl bg-stone-300/70 sm:inset-x-6" />
-                <div className="absolute inset-x-2 top-1 h-6 rounded-t-xl bg-stone-300 sm:inset-x-3 sm:top-1.5" />
-                <div className="relative aspect-video overflow-hidden rounded-xl bg-stone-200 ">
+                <div className="absolute inset-x-4 top-0 h-6 rounded-t-xl bg-border-strong/70 sm:inset-x-6" />
+                <div className="absolute inset-x-2 top-1 h-6 rounded-t-xl bg-border-strong sm:inset-x-3 sm:top-1.5" />
+                <div className="relative aspect-video overflow-hidden rounded-xl bg-fill-strong">
                   <img
                     src={items[0].cover}
                     alt={al.title}
@@ -171,7 +171,7 @@ function AlbumGrid({
                     decoding="async"
                     className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
                   />
-                  <div className="absolute inset-y-0 right-0 flex w-1/3 flex-col items-center justify-center gap-1 bg-stone-950/55 text-white backdrop-blur-sm">
+                  <div className="absolute inset-y-0 right-0 flex w-1/3 flex-col items-center justify-center gap-1 bg-scrim/55 text-white backdrop-blur-sm">
                     <span className="text-base font-medium sm:text-xl">{items.length}</span>
                     <span className="text-[11px] text-white/70 sm:text-xs">{t.videosUnit}</span>
                   </div>
