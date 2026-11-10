@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
+import { IMMUTABLE_CACHE_CONTROL } from '../../shared/cacheControl'
 import { HttpError } from '../../shared/httpError'
 import { createLogger } from '../../shared/log'
 import { NAME_FIELD_SCHEMA } from '../../shared/schema'
@@ -13,10 +14,6 @@ import type { VideoTagInput, VideoTagWriter } from './videoTagWriter'
 // Neutral 16:9 frame for videos without an embedded cover, so clients can always render `cover`
 const PLACEHOLDER_COVER =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#e7e5e4"/></svg>'
-
-// Media URLs embed the file version, so a given URL always serves the same bytes.
-// They are public (outside the /api login lock) so a CDN can cache them
-const MEDIA_CACHE_CONTROL = 'public, max-age=31536000, immutable'
 
 type VideoParams = { Params: { videoId: string } }
 type VideoVersionParams = { Params: { videoId: string; version: string } }
@@ -55,7 +52,9 @@ export function registerCatalogRoutes(
     return buildVideoFileList(videos, await prober.probeAll(videos))
   })
 
-  // A stale version is a 404, never the current file: otherwise a CDN would cache new content under an old URL
+  // Media URLs embed the file version, so a given URL always serves the same bytes; they sit outside the /api
+  // login lock so a CDN can cache them. A stale version is a 404, never the current file:
+  // otherwise a CDN would cache new content under an old URL
   const requireVideoVersion = ({ videoId, version }: VideoVersionParams['Params']): LibraryVideo => {
     const video = requireVideo(videoId)
     if (video.version !== version) throw new HttpError(404, `Video version not found: ${videoId}/${version}`)
@@ -65,13 +64,13 @@ export function registerCatalogRoutes(
   // sendFile answers HTTP Range requests, which <video> needs for seeking
   app.get<VideoVersionParams>('/media/video/:videoId/:version/stream', (request, reply) =>
     reply
-      .header('Cache-Control', MEDIA_CACHE_CONTROL)
+      .header('Cache-Control', IMMUTABLE_CACHE_CONTROL)
       .sendFile(requireVideoVersion(request.params).relativePath, { cacheControl: false }),
   )
 
   app.get<VideoVersionParams>('/media/video/:videoId/:version/cover', async (request, reply) => {
     const cover = await readCover(requireVideoVersion(request.params).absolutePath)
-    reply.header('Cache-Control', MEDIA_CACHE_CONTROL)
+    reply.header('Cache-Control', IMMUTABLE_CACHE_CONTROL)
     if (!cover) return reply.type('image/svg+xml').send(PLACEHOLDER_COVER)
     return reply.type(cover.mediaType).send(Buffer.from(cover.content))
   })
@@ -115,7 +114,7 @@ export function registerCatalogRoutes(
     const photo = creator && photos.find(creator)
     if (!photo || photo.version !== version) throw new HttpError(404, `Creator photo not found: ${authorId}/${version}`)
     return reply
-      .header('Cache-Control', MEDIA_CACHE_CONTROL)
+      .header('Cache-Control', IMMUTABLE_CACHE_CONTROL)
       .sendFile(photo.fileName, photos.photoDir, { cacheControl: false })
   })
 }

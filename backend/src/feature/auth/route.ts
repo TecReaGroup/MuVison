@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { API_CACHE_CONTROL } from '../../shared/cacheControl'
 import { HttpError } from '../../shared/httpError'
 import { createLogger } from '../../shared/log'
 import type { PasswordGate } from './passwordGate'
@@ -7,9 +8,6 @@ const SESSION_COOKIE = 'muvision_session'
 const AUTH_ROUTE_PREFIX = '/api/auth/'
 // Slows down password guessing without needing a rate-limit store
 const LOGIN_FAILURE_DELAY_MS = 1000
-// API responses belong to one logged-in session: a CDN or proxy must never store and replay them,
-// and the browser must revalidate so edits show up immediately
-const API_CACHE_CONTROL = 'private, no-cache'
 
 type LoginRoute = { Body: { password: string } }
 

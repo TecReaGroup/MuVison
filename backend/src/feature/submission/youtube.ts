@@ -1,15 +1,37 @@
 import { HttpError } from '../../shared/httpError'
 
-const OEMBED_URL = 'https://www.youtube.com/oembed'
+// Innertube "next" (the watch page's own data call) instead of oEmbed: oEmbed answers 401 for public
+// videos whose owner disabled embedding, and the watch page HTML hits a bot check from server IPs.
+const WATCH_DATA_URL = 'https://www.youtube.com/youtubei/v1/next?prettyPrint=false'
+const WATCH_DATA_CLIENT = { clientName: 'WEB', clientVersion: '2.20241101.00.00', hl: 'en' }
 const REQUEST_TIMEOUT_MS = 15_000
 // Best first; maxresdefault is missing on older or low-resolution uploads
 const THUMBNAIL_NAMES = ['maxresdefault', 'sddefault', 'hqdefault']
+const AVATAR_SIZE_PX = 900
 
-// og:image on a channel page is the channel avatar; attribute order is stable in YouTube's markup
-const OG_IMAGE_PATTERN = /<meta\s+property="og:image"\s+content="([^"]+)"/
+// Size segment of a googleusercontent/ggpht image URL, e.g. "=s176-c-k-..."
+const AVATAR_SIZE_PATTERN = /=s\d+-/
 
 export type YouTubePreview = { videoId: string; title: string; creator: string; thumbnail: string }
-type OEmbed = { title: string; author_name: string; author_url: string }
+type WatchDetails = { title: string; creator: string; avatarUrl: string | undefined }
+
+type TextRuns = { runs?: { text: string }[] }
+type WatchNextResponse = {
+  contents?: {
+    twoColumnWatchNextResults?: {
+      results?: {
+        results?: {
+          contents?: {
+            videoPrimaryInfoRenderer?: { title?: TextRuns }
+            videoSecondaryInfoRenderer?: {
+              owner?: { videoOwnerRenderer?: { title?: TextRuns; thumbnail?: { thumbnails?: { url: string }[] } } }
+            }
+          }[]
+        }
+      }
+    }
+  }
+}
 
 /** Extracts the 11-char video id from common YouTube URL shapes. */
 export function parseYouTubeId(raw: string): string | null {
@@ -42,26 +64,35 @@ export function requireYouTubeId(url: string): string {
   return videoId
 }
 
-async function fetchOEmbed(videoId: string): Promise<OEmbed> {
-  const query = new URLSearchParams({ url: canonicalWatchUrl(videoId), format: 'json' })
-  const response = await fetch(`${OEMBED_URL}?${query}`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
-  // oEmbed answers 401 for private videos and 404 for removed ones
-  if (response.status === 401 || response.status === 404) throw new HttpError(404, 'Video is unavailable')
-  if (!response.ok) throw new HttpError(502, `YouTube oEmbed failed: ${response.status}`)
-  return (await response.json()) as OEmbed
+const joinRuns = (text: TextRuns | undefined) => text?.runs?.map((run) => run.text).join('') ?? ''
+
+/** Throws 404 when YouTube renders no video info, which is how removed and private videos come back. */
+async function fetchWatchDetails(videoId: string): Promise<WatchDetails> {
+  const response = await fetch(WATCH_DATA_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ context: { client: WATCH_DATA_CLIENT }, videoId }),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  })
+  if (!response.ok) throw new HttpError(502, `YouTube watch data failed: ${response.status}`)
+  const sections = ((await response.json()) as WatchNextResponse).contents?.twoColumnWatchNextResults?.results?.results
+    ?.contents ?? []
+  const title = joinRuns(sections.find((section) => section.videoPrimaryInfoRenderer)?.videoPrimaryInfoRenderer?.title)
+  const owner = sections.find((section) => section.videoSecondaryInfoRenderer)?.videoSecondaryInfoRenderer?.owner
+    ?.videoOwnerRenderer
+  if (!title || !owner) throw new HttpError(404, 'Video is unavailable')
+  const avatarUrl = owner.thumbnail?.thumbnails?.at(-1)?.url.replace(AVATAR_SIZE_PATTERN, `=s${AVATAR_SIZE_PX}-`)
+  return { title, creator: joinRuns(owner.title), avatarUrl }
 }
 
 export async function fetchYouTubePreview(videoId: string): Promise<YouTubePreview> {
-  const embed = await fetchOEmbed(videoId)
-  return { videoId, title: embed.title, creator: embed.author_name, thumbnail: thumbnailUrls(videoId).at(-1)! }
+  const { title, creator } = await fetchWatchDetails(videoId)
+  return { videoId, title, creator, thumbnail: thumbnailUrls(videoId).at(-1)! }
 }
 
 /** Finds the avatar of the channel that uploaded the video, without needing a YouTube API key. */
 export async function fetchChannelAvatarUrl(videoId: string): Promise<string> {
-  const { author_url: channelUrl } = await fetchOEmbed(videoId)
-  const response = await fetch(channelUrl, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
-  if (!response.ok) throw new Error(`Channel page ${channelUrl} failed: ${response.status}`)
-  const avatarUrl = (await response.text()).match(OG_IMAGE_PATTERN)?.[1]
-  if (!avatarUrl) throw new Error(`No avatar found on ${channelUrl}`)
-  return avatarUrl.replaceAll('&amp;', '&')
+  const { avatarUrl } = await fetchWatchDetails(videoId)
+  if (!avatarUrl) throw new Error(`No channel avatar for video ${videoId}`)
+  return avatarUrl
 }

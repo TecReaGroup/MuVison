@@ -1,6 +1,7 @@
 import { statSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
 import type { FastifyInstance } from 'fastify'
+import { ENTRY_CACHE_CONTROL, IMMUTABLE_CACHE_CONTROL } from '../../shared/cacheControl'
 import { HttpError } from '../../shared/httpError'
 
 type AssetRoute = { Params: { '*': string } }
@@ -21,10 +22,12 @@ export function registerWebRoutes(app: FastifyInstance, distDir: string): void {
     const assetPath = request.params['*']
     if (assetPath.startsWith('assets/') && isFileInside(distDir, assetPath)) {
       // Vite fingerprints everything under assets/, so it can be cached forever
-      return reply.sendFile(assetPath, distDir, { maxAge: '365d', immutable: true })
+      return reply
+        .header('Cache-Control', IMMUTABLE_CACHE_CONTROL)
+        .sendFile(assetPath, distDir, { cacheControl: false })
     }
     if (isFileInside(distDir, assetPath)) return reply.sendFile(assetPath, distDir)
     // cacheControl: false stops @fastify/static from overwriting the header with max-age=0
-    return reply.header('Cache-Control', 'no-cache').sendFile('index.html', distDir, { cacheControl: false })
+    return reply.header('Cache-Control', ENTRY_CACHE_CONTROL).sendFile('index.html', distDir, { cacheControl: false })
   })
 }
