@@ -1,10 +1,8 @@
 import type { Author } from './catalog'
-import { useCatalog } from './CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 
-export function AuthorCard({ author, onOpen }: { author: Author; onOpen: () => void }) {
+export function AuthorCard({ author, videoCount, onOpen }: { author: Author; videoCount: number; onOpen: () => void }) {
   const { t } = useI18n()
-  const count = useCatalog().videos.filter((v) => v.authorId === author.id).length
 
   return (
     <button
@@ -14,13 +12,15 @@ export function AuthorCard({ author, onOpen }: { author: Author; onOpen: () => v
       <img
         src={author.avatar}
         alt=""
+        loading="lazy"
+        decoding="async"
         className="h-16 w-16 rounded-full object-cover ring-4 ring-stone-100 sm:h-20 sm:w-20"
       />
       <h3 className="mt-4 max-w-full truncate text-[15px] font-semibold tracking-tight text-foreground">
         {author.name}
       </h3>
       <p className="mt-4 w-full border-t border-stone-100 pt-3 text-xs sm:mt-5 sm:pt-4 tabular-nums text-muted">
-        {t.videoCount(count)}
+        {t.videoCount(videoCount)}
       </p>
     </button>
   )

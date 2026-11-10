@@ -6,6 +6,7 @@ import { EditVideoDialog } from './EditVideoDialog'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { PencilIcon, PlayIcon } from '@/shared/design/icon'
 import { GRID_ITEM } from '@/shared/design/motion'
+import { useIncrementalList } from '@/shared/design/useIncrementalList'
 import { useLongPress } from '@/shared/design/useLongPress'
 
 // Shared with the loading skeleton so its placeholder cards line up with the real ones
@@ -26,10 +27,11 @@ export function VideoGrid({
   const { authorById } = useCatalog()
   const [editing, setEditing] = useState<Video | null>(null)
   const closeEditor = useCallback(() => setEditing(null), [])
+  const { visibleItems, loadMoreAnchor } = useIncrementalList(items)
   return (
-    <div className={className}>
+    <div className={`relative ${className}`}>
       <AnimatePresence mode="popLayout">
-        {items.map((v) => (
+        {visibleItems.map((v) => (
           // Author is resolved here, not in the card: an exiting card keeps its last props but would re-read a
           // catalog where a deleted or retagged video's author may no longer exist
           <motion.div key={v.id} {...GRID_ITEM}>
@@ -43,6 +45,7 @@ export function VideoGrid({
           </motion.div>
         ))}
       </AnimatePresence>
+      {loadMoreAnchor}
       <EditVideoDialog video={editing} onClose={closeEditor} />
     </div>
   )
@@ -76,6 +79,7 @@ function VideoCard({
             src={video.cover}
             alt={video.title}
             loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
           />
           <div className="absolute inset-0 bg-stone-950/0 transition-colors duration-200 group-hover:bg-stone-950/10" />

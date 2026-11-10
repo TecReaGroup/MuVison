@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
 import { HttpError } from '../../shared/httpError'
 import { createLogger } from '../../shared/log'
@@ -38,8 +39,16 @@ export function registerCatalogRoutes(
     return video
   }
 
-  // Rescan on every catalog load so files dropped into the folder show up without a restart
-  app.get('/api/catalog', async (): Promise<CatalogView> => buildCatalog(await library.scan(), photos))
+  // Rescan on every catalog load so files dropped into the folder show up without a restart.
+  // The ETag lets an unchanged catalog, which grows with the library, come back as an empty 304
+  app.get('/api/catalog', async (request, reply) => {
+    const catalog: CatalogView = buildCatalog(await library.scan(), photos)
+    const body = JSON.stringify(catalog)
+    const etag = `"${createHash('sha1').update(body).digest('base64url')}"`
+    reply.header('ETag', etag)
+    if (request.headers['if-none-match'] === etag) return reply.status(304).send()
+    return reply.type('application/json').send(body)
+  })
 
   app.get('/api/library/video', async (): Promise<VideoFileView[]> => {
     const videos = await library.scan()

@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useDeferredValue, useMemo } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import type { Video } from './catalog'
+import type { Album, Author, Video } from './catalog'
 import { useCatalog } from './CatalogProvider'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { GRID_ITEM } from '@/shared/design/motion'
 import { PageTitle } from '@/shared/design/PageTitle'
+import { useIncrementalList } from '@/shared/design/useIncrementalList'
 import { AuthorCard } from './AuthorCard'
 import { SearchEmpty } from './SearchEmpty'
 import { VideoGrid } from './VideoGrid'
@@ -29,6 +30,18 @@ function sortItems<T>(
   return [...items].sort((a, b) => sign * compareAscending(a, b))
 }
 
+/** Videos of each group in catalog order, built once instead of filtering all videos per card. */
+function groupVideosBy(videos: Video[], groupIdOf: (video: Video) => string) {
+  const groups = new Map<string, Video[]>()
+  for (const video of videos) {
+    const id = groupIdOf(video)
+    const group = groups.get(id)
+    if (group) group.push(video)
+    else groups.set(id, [video])
+  }
+  return groups
+}
+
 /** Latest `addedAt` among each group's videos, so a group surfaces when anything new joins it. */
 function latestAddedAtBy(videos: Video[], groupIdOf: (video: Video) => string) {
   const latest = new Map<string, number>()
@@ -41,7 +54,7 @@ function latestAddedAtBy(videos: Video[], groupIdOf: (video: Video) => string) {
 
 export function CatalogPage({
   section,
-  query,
+  query: typedQuery,
   onPlay,
   onAuthor,
   onAlbum,
@@ -55,8 +68,12 @@ export function CatalogPage({
   const { t, lang } = useI18n()
   const { videos, albums, authors, authorById } = useCatalog()
   const [sort, setSort] = useCatalogSort(section)
+  // Filtering a large library per keystroke would lag the input; React renders the results behind it instead
+  const query = useDeferredValue(typedQuery)
   const albumAddedAt = useMemo(() => latestAddedAtBy(videos, (v) => v.albumId), [videos])
   const authorAddedAt = useMemo(() => latestAddedAtBy(videos, (v) => v.authorId), [videos])
+  const videosByAlbum = useMemo(() => groupVideosBy(videos, (v) => v.albumId), [videos])
+  const videosByAuthor = useMemo(() => groupVideosBy(videos, (v) => v.authorId), [videos])
   const filteredVideos = useMemo(
     () =>
       sortItems(
@@ -68,21 +85,29 @@ export function CatalogPage({
       ),
     [videos, authorById, query, sort, lang],
   )
-  const filteredAlbums = sortItems(
-    albums.filter(
-      (a) => matchesQuery(a.title, query) || a.authorIds.some((id) => matchesQuery(authorById(id).name, query)),
-    ),
-    sort,
-    lang,
-    (a) => albumAddedAt.get(a.id) ?? 0,
-    (a) => a.title,
+  const filteredAlbums = useMemo(
+    () =>
+      sortItems(
+        albums.filter(
+          (a) => matchesQuery(a.title, query) || a.authorIds.some((id) => matchesQuery(authorById(id).name, query)),
+        ),
+        sort,
+        lang,
+        (a) => albumAddedAt.get(a.id) ?? 0,
+        (a) => a.title,
+      ),
+    [albums, authorById, albumAddedAt, query, sort, lang],
   )
-  const filteredAuthors = sortItems(
-    authors.filter((a) => matchesQuery(a.name, query)),
-    sort,
-    lang,
-    (a) => authorAddedAt.get(a.id) ?? 0,
-    (a) => a.name,
+  const filteredAuthors = useMemo(
+    () =>
+      sortItems(
+        authors.filter((a) => matchesQuery(a.name, query)),
+        sort,
+        lang,
+        (a) => authorAddedAt.get(a.id) ?? 0,
+        (a) => a.name,
+      ),
+    [authors, authorAddedAt, query, sort, lang],
   )
   const sortSwitch = <CatalogSortSwitch sort={sort} onSort={setSort} />
 
@@ -99,33 +124,7 @@ export function CatalogPage({
     <>
       <PageTitle title={t.navAlbums} sub={t.albumCount(filteredAlbums.length)} action={sortSwitch} />
       {filteredAlbums.length ? (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-6 sm:gap-y-8 md:gap-y-10 xl:grid-cols-3 2xl:grid-cols-4">
-          <AnimatePresence mode="popLayout">
-            {filteredAlbums.map((al) => {
-              const items = videos.filter((v) => v.albumId === al.id)
-              return (
-                <motion.button key={al.id} {...GRID_ITEM} onClick={() => onAlbum(al.id)} className="group text-left">
-                  <div className="relative pt-2 sm:pt-3">
-                    <div className="absolute inset-x-4 top-0 h-6 rounded-t-xl bg-stone-300/70 sm:inset-x-6" />
-                    <div className="absolute inset-x-2 top-1 h-6 rounded-t-xl bg-stone-300 sm:inset-x-3 sm:top-1.5" />
-                    <div className="relative aspect-video overflow-hidden rounded-xl bg-stone-200 ">
-                      <img
-                        src={items[0]?.cover}
-                        alt={al.title}
-                        className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
-                      />
-                      <div className="absolute inset-y-0 right-0 flex w-1/3 flex-col items-center justify-center gap-1 bg-stone-950/55 text-white backdrop-blur-sm">
-                        <span className="text-base font-medium sm:text-xl">{items.length}</span>
-                        <span className="text-[11px] text-white/70 sm:text-xs">{t.videosUnit}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <h3 className="mt-2 line-clamp-1 text-sm font-medium leading-snug sm:mt-3.5 sm:text-[15px]">{al.title}</h3>
-                </motion.button>
-              )
-            })}
-          </AnimatePresence>
-        </div>
+        <AlbumGrid albums={filteredAlbums} videosByAlbum={videosByAlbum} onAlbum={onAlbum} />
       ) : (
         <SearchEmpty query={query} />
       )}
@@ -134,18 +133,80 @@ export function CatalogPage({
     <>
       <PageTitle title={t.navAuthors} sub={t.authorCount(filteredAuthors.length)} action={sortSwitch} />
       {filteredAuthors.length ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 xl:grid-cols-4 2xl:grid-cols-6">
-          <AnimatePresence mode="popLayout">
-            {filteredAuthors.map((a) => (
-              <motion.div key={a.id} {...GRID_ITEM}>
-                <AuthorCard author={a} onOpen={() => onAuthor(a.id)} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+        <AuthorGrid authors={filteredAuthors} videosByAuthor={videosByAuthor} onAuthor={onAuthor} />
       ) : (
         <SearchEmpty query={query} />
       )}
     </>
+  )
+}
+
+function AlbumGrid({
+  albums,
+  videosByAlbum,
+  onAlbum,
+}: {
+  albums: Album[]
+  videosByAlbum: Map<string, Video[]>
+  onAlbum: (id: string) => void
+}) {
+  const { t } = useI18n()
+  const { visibleItems, loadMoreAnchor } = useIncrementalList(albums)
+  return (
+    <div className="relative grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-6 sm:gap-y-8 md:gap-y-10 xl:grid-cols-3 2xl:grid-cols-4">
+      <AnimatePresence mode="popLayout">
+        {visibleItems.map((al) => {
+          // Albums are derived from videos, so every album has at least one
+          const items = videosByAlbum.get(al.id)!
+          return (
+            <motion.button key={al.id} {...GRID_ITEM} onClick={() => onAlbum(al.id)} className="group text-left">
+              <div className="relative pt-2 sm:pt-3">
+                <div className="absolute inset-x-4 top-0 h-6 rounded-t-xl bg-stone-300/70 sm:inset-x-6" />
+                <div className="absolute inset-x-2 top-1 h-6 rounded-t-xl bg-stone-300 sm:inset-x-3 sm:top-1.5" />
+                <div className="relative aspect-video overflow-hidden rounded-xl bg-stone-200 ">
+                  <img
+                    src={items[0].cover}
+                    alt={al.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex w-1/3 flex-col items-center justify-center gap-1 bg-stone-950/55 text-white backdrop-blur-sm">
+                    <span className="text-base font-medium sm:text-xl">{items.length}</span>
+                    <span className="text-[11px] text-white/70 sm:text-xs">{t.videosUnit}</span>
+                  </div>
+                </div>
+              </div>
+              <h3 className="mt-2 line-clamp-1 text-sm font-medium leading-snug sm:mt-3.5 sm:text-[15px]">{al.title}</h3>
+            </motion.button>
+          )
+        })}
+      </AnimatePresence>
+      {loadMoreAnchor}
+    </div>
+  )
+}
+
+function AuthorGrid({
+  authors,
+  videosByAuthor,
+  onAuthor,
+}: {
+  authors: Author[]
+  videosByAuthor: Map<string, Video[]>
+  onAuthor: (id: string) => void
+}) {
+  const { visibleItems, loadMoreAnchor } = useIncrementalList(authors)
+  return (
+    <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 xl:grid-cols-4 2xl:grid-cols-6">
+      <AnimatePresence mode="popLayout">
+        {visibleItems.map((a) => (
+          <motion.div key={a.id} {...GRID_ITEM}>
+            <AuthorCard author={a} videoCount={videosByAuthor.get(a.id)!.length} onOpen={() => onAuthor(a.id)} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+      {loadMoreAnchor}
+    </div>
   )
 }

@@ -1,6 +1,8 @@
 import { patchJson, requestJson } from '@/shared/http/requestJson'
 
 const CATALOG_URL = '/api/catalog'
+// NOTE: bump the version whenever the Catalog shape changes, so an old snapshot is never rendered
+const CATALOG_SNAPSHOT_KEY = 'muvision-catalog-snapshot-v1'
 
 export type Author = { id: string; name: string; avatar: string }
 export type Album = { id: string; title: string; authorIds: string[] }
@@ -35,7 +37,26 @@ export type VideoFile = {
 }
 export type VideoTagInput = { title: string; creator: string; album: string }
 
-export const fetchCatalog = (signal?: AbortSignal) => requestJson<Catalog>(CATALOG_URL, { signal })
+/** Last catalog the server sent, so the next launch can render before the network answers. */
+export function readCatalogSnapshot(): Catalog | null {
+  try {
+    return JSON.parse(localStorage.getItem(CATALOG_SNAPSHOT_KEY) ?? 'null')
+  } catch {
+    return null
+  }
+}
+
+/** Fetches the catalog and keeps it as the snapshot for the next launch. */
+export async function fetchCatalog(signal?: AbortSignal): Promise<Catalog> {
+  // no-cache (not no-store) sends If-None-Match, so an unchanged catalog costs an empty 304
+  const catalog = await requestJson<Catalog>(CATALOG_URL, { signal, cache: 'no-cache' })
+  try {
+    localStorage.setItem(CATALOG_SNAPSHOT_KEY, JSON.stringify(catalog))
+  } catch {
+    // Over quota or storage blocked: the snapshot is only a head start that the next launch's fetch replaces anyway
+  }
+  return catalog
+}
 
 /** Probes every file for codecs, so it is slower than the catalog; fetch only when the list is shown. */
 export const fetchVideoFiles = (signal?: AbortSignal) => requestJson<VideoFile[]>('/api/library/video', { signal })

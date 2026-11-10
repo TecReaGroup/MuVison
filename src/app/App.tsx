@@ -25,7 +25,7 @@ const NAVIGATION: { key: Section; label: 'navVideos' | 'navAlbums' | 'navAuthors
 
 export default function App() {
   const { route, previous, push, replace, back } = useRouter()
-  const { videos, albums, authors } = useCatalog()
+  const { videos, albums, authors, isSnapshot } = useCatalog()
   const [query, setQuery] = useState('')
   const [submitOpen, setSubmitOpen] = useState(false)
   const [mobileSearch, setMobileSearch] = useState(false)
@@ -42,9 +42,10 @@ export default function App() {
   const { section, detail } = routeIsKnown ? route : HOME_ROUTE
   const watching = routeIsKnown ? routeVideo : null
 
+  // A snapshot may predate the linked video, so only the server's catalog can prove a route unknown
   useEffect(() => {
-    if (!routeIsKnown) replace(HOME_ROUTE)
-  }, [routeIsKnown])
+    if (!routeIsKnown && !isSnapshot) replace(HOME_ROUTE)
+  }, [routeIsKnown, isSnapshot])
 
   const closeSubmit = useCallback(() => setSubmitOpen(false), [])
 

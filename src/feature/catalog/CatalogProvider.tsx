@@ -1,15 +1,21 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useI18n } from '@/shared/i18n/I18nProvider'
-import { fetchCatalog, type Album, type Author, type Catalog } from './catalog'
+import { fetchCatalog, readCatalogSnapshot, type Album, type Author, type Catalog } from './catalog'
 
 type CatalogIndex = Catalog & {
+  /** True while showing the last launch's snapshot, before the server confirmed it; ids may be stale or missing. */
+  isSnapshot: boolean
   authorById: (id: string) => Author
   albumById: (id: string) => Album
   /** Reloads in place, keeping the current catalog on screen; a failed reload keeps it unchanged. */
   refresh: () => Promise<void>
 }
 
-type LoadState = { status: 'loading' } | { status: 'failed' } | { status: 'ready'; catalog: Catalog }
+type LoadState =
+  | { status: 'loading' }
+  | { status: 'failed' }
+  | { status: 'snapshot'; catalog: Catalog }
+  | { status: 'ready'; catalog: Catalog }
 
 // The backend may still be starting (or restarting under watch) when the page loads
 const AUTO_RETRY_LIMIT = 5
@@ -28,25 +34,31 @@ async function fetchCatalogWithRetry(signal: AbortSignal): Promise<Catalog> {
   }
 }
 
+const initialLoadState = (): LoadState => {
+  const snapshot = readCatalogSnapshot()
+  return snapshot ? { status: 'snapshot', catalog: snapshot } : { status: 'loading' }
+}
+
 /**
  * Loads the catalog once; children render only after it arrives, so they can trust every id resolves.
- * `fallback` shows while loading; a failed load shows its own retry screen.
+ * A snapshot from the last launch renders at once while the fresh catalog loads behind it (stale-while-revalidate).
+ * `fallback` shows while loading without a snapshot; a failed load without one shows its own retry screen.
  */
 export function CatalogProvider({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {
   const { t } = useI18n()
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [state, setState] = useState<LoadState>(initialLoadState)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     const controller = new AbortController()
-    setState({ status: 'loading' })
+    setState((current) => (current.status === 'failed' ? { status: 'loading' } : current))
     fetchCatalogWithRetry(controller.signal)
       .then((catalog) => setState({ status: 'ready', catalog }))
       .catch((error: unknown) => {
-        if (!controller.signal.aborted) {
-          console.error(error)
-          setState({ status: 'failed' })
-        }
+        if (controller.signal.aborted) return
+        console.error(error)
+        // Offline with a snapshot: keep showing it rather than an error screen
+        setState((current) => (current.status === 'loading' ? { status: 'failed' } : current))
       })
     return () => controller.abort()
   }, [attempt])
@@ -61,11 +73,17 @@ export function CatalogProvider({ children, fallback }: { children: ReactNode; f
   }, [])
 
   const index = useMemo<CatalogIndex | null>(() => {
-    if (state.status !== 'ready') return null
+    if (state.status !== 'ready' && state.status !== 'snapshot') return null
     const { catalog } = state
     const authors = new Map(catalog.authors.map((a) => [a.id, a]))
     const albums = new Map(catalog.albums.map((a) => [a.id, a]))
-    return { ...catalog, authorById: (id) => authors.get(id)!, albumById: (id) => albums.get(id)!, refresh }
+    return {
+      ...catalog,
+      isSnapshot: state.status === 'snapshot',
+      authorById: (id) => authors.get(id)!,
+      albumById: (id) => albums.get(id)!,
+      refresh,
+    }
   }, [state, refresh])
 
   if (index) return <CatalogContext.Provider value={index}>{children}</CatalogContext.Provider>

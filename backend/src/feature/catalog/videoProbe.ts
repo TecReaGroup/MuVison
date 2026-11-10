@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { mapConcurrently } from '../../shared/concurrency'
 import { createLogger } from '../../shared/log'
 import type { LibraryVideo } from './library'
 
@@ -54,12 +55,8 @@ export class VideoProber {
   }
 
   async probeAll(videos: LibraryVideo[]): Promise<Map<string, VideoProbe>> {
-    const probes = new Map<string, VideoProbe>()
-    const queue = [...videos]
-    const worker = async () => {
-      for (let video = queue.shift(); video; video = queue.shift()) probes.set(video.id, await this.#probe(video))
-    }
-    await Promise.all(Array.from({ length: PROBE_CONCURRENCY }, worker))
+    const probeList = await mapConcurrently(videos, PROBE_CONCURRENCY, (video) => this.#probe(video))
+    const probes = new Map(videos.map((video, index) => [video.id, probeList[index]]))
     // Forget files that left the library
     this.#cache = new Map([...this.#cache].filter(([id]) => probes.has(id)))
     return probes

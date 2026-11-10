@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useI18n } from '@/shared/i18n/I18nProvider'
 import { SpinnerIcon } from '@/shared/design/icon'
 import { fetchVideoFiles, formatDuration, type VideoFile } from './catalog'
+import { useCatalog } from './CatalogProvider'
 
 const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
 // ffprobe reports codec ids; show the names people know them by
@@ -55,20 +56,37 @@ function VideoFileCard({ file }: { file: VideoFile }) {
 
 type LoadState = { status: 'loading' } | { status: 'failed' } | { status: 'loaded'; files: VideoFile[] }
 
-/** Every library file with tags, size and encoding details; probes on mount, so show it only on demand. */
+// Outlives the settings dialog, so reopening shows the last list at once while it revalidates
+let lastLoadedFiles: VideoFile[] | null = null
+
+/**
+ * Every library file with tags, size and encoding details.
+ * Refetches whenever the catalog changes (edit, delete, new download), so it stays in sync with the library;
+ * the previous list stays on screen meanwhile, and a failed revalidation keeps it.
+ */
 export function VideoFileTable() {
   const { t, lang } = useI18n()
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const { videos } = useCatalog()
+  const [state, setState] = useState<LoadState>(() =>
+    lastLoadedFiles ? { status: 'loaded', files: lastLoadedFiles } : { status: 'loading' },
+  )
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     const controller = new AbortController()
-    setState({ status: 'loading' })
+    if (!lastLoadedFiles) setState({ status: 'loading' })
     fetchVideoFiles(controller.signal)
-      .then((files) => setState({ status: 'loaded', files: files.toSorted((a, b) => b.addedAt - a.addedAt) }))
-      .catch(() => !controller.signal.aborted && setState({ status: 'failed' }))
+      .then((files) => {
+        lastLoadedFiles = files.toSorted((a, b) => b.addedAt - a.addedAt)
+        setState({ status: 'loaded', files: lastLoadedFiles })
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        console.error(error)
+        if (!lastLoadedFiles) setState({ status: 'failed' })
+      })
     return () => controller.abort()
-  }, [attempt])
+  }, [videos, attempt])
 
   if (state.status === 'loading') {
     return (

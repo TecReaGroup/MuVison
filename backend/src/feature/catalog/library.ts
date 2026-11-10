@@ -1,12 +1,15 @@
 import { createHash } from 'node:crypto'
 import { readdir, rm, stat } from 'node:fs/promises'
 import { extname, join } from 'node:path'
+import { mapConcurrently } from '../../shared/concurrency'
 import { FILE_IN_USE_CODES } from '../../shared/fileSystem'
 import { HttpError } from '../../shared/httpError'
 import { createLogger } from '../../shared/log'
 import { readVideoTag, VIDEO_EXTENSIONS, type VideoTag } from './metadata'
 
 const STABLE_ID_LENGTH = 12
+// Files opened at once while scanning; a first scan of a large library would otherwise hit the open-file limit
+const SCAN_CONCURRENCY = 8
 const log = createLogger('catalog')
 
 /** Derives an id that survives rescans and restarts as long as the inputs do. */
@@ -55,26 +58,30 @@ export class VideoLibrary {
     this.videoDir = videoDir
   }
 
+  /** Re-reads tags only for new or rewritten files; unchanged files cost one stat. */
   async scan(): Promise<LibraryVideo[]> {
-    const videos = new Map<string, LibraryVideo>()
-    for (const relativePath of await listVideoFiles(this.videoDir)) {
+    const previous = this.#videos
+    let tagReadCount = 0
+    const scanned = await mapConcurrently(await listVideoFiles(this.videoDir), SCAN_CONCURRENCY, async (relativePath) => {
+      const id = stableId(relativePath)
       const absolutePath = join(this.videoDir, relativePath)
       try {
-        const video = {
-          id: stableId(relativePath),
-          relativePath,
-          absolutePath,
-          ...(await fileStampOf(absolutePath)),
-          tag: await readVideoTag(absolutePath),
-        }
-        videos.set(video.id, video)
+        const stamp = await fileStampOf(absolutePath)
+        const known = previous.get(id)
+        if (known?.version === stamp.version) return { ...known, ...stamp }
+        tagReadCount++
+        return { id, relativePath, absolutePath, ...stamp, tag: await readVideoTag(absolutePath) }
       } catch (error) {
         log.warn(`Skip unreadable video ${relativePath}: ${error instanceof Error ? error.message : error}`)
+        return undefined
       }
-    }
+    })
+    const videos = new Map(scanned.filter((video) => video !== undefined).map((video) => [video.id, video]))
     // Swap the whole index so lookups never see a half-built scan
     this.#videos = videos
-    log.info(`Scanned ${videos.size} videos in ${this.videoDir}`)
+    const message = `Scanned ${videos.size} videos in ${this.videoDir}, read tags of ${tagReadCount}`
+    if (tagReadCount) log.info(message)
+    else log.debug(message)
     return [...videos.values()]
   }
 
