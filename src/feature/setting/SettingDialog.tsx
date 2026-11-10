@@ -17,6 +17,7 @@ import {
 import { Wordmark } from '@/shared/design/Brand'
 import { Modal } from '@/shared/design/Modal'
 import { SPRING } from '@/shared/design/motion'
+import { useScrollActivity } from '@/shared/design/useScrollActivity'
 
 const GITHUB_URL = 'https://github.com/TecReaGroup/Muvison'
 
@@ -59,6 +60,7 @@ export function SettingButton() {
 function SettingDialog({ onClose }: { onClose: () => void }) {
   const { t } = useI18n()
   const headingId = useId()
+  const contentScroll = useScrollActivity()
   const [activeKey, setActiveKey] = useState(SETTING_SECTIONS[0].key)
   const active = SETTING_SECTIONS.find((s) => s.key === activeKey)!
 
@@ -110,7 +112,10 @@ function SettingDialog({ onClose }: { onClose: () => void }) {
           <CloseIcon className="h-5 w-5" />
         </button>
 
-        <section className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6 pt-4 sm:px-10 sm:pb-8 sm:pt-8">
+        <section
+          onScroll={contentScroll.onScroll}
+          className={`${contentScroll.scrollClass} flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6 pt-4 sm:px-10 sm:pb-8 sm:pt-8`}
+        >
           {/* Phones already name the section in the selected tab */}
           <h3 className="hidden pr-10 text-xl font-semibold tracking-tight sm:block">{t[active.label]}</h3>
           {active.description && <p className="text-sm text-muted sm:mt-1.5">{t[active.description]}</p>}
