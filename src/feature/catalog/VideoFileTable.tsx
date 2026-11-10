@@ -117,20 +117,21 @@ export function VideoFileTable() {
   const bodyCell = 'whitespace-nowrap px-3 py-2.5'
 
   return (
-    <>
+    // Desktop: fills the panel's remaining height so only the table scrolls; phones scroll the whole sheet
+    <div className="flex flex-col sm:min-h-0 sm:flex-1">
       <p className="mb-3 text-sm tabular-nums text-muted">{t.videoFilesSummary(files.length, formatBytes(totalBytes))}</p>
       <ul className="divide-y divide-border/70 sm:hidden">
         {files.map((file) => (
           <VideoFileCard key={file.id} file={file} />
         ))}
       </ul>
-      {/* Horizontal-only scroller: drop the vertical gutter .thin-scroll reserves (unlayered, hence `!`) */}
+      {/* A stable gutter would leave a blank strip beside the sticky header while nothing overflows (unlayered, hence `!`) */}
       <div
         onScroll={tableScroll.onScroll}
-        className={`${tableScroll.scrollClass} hidden overflow-x-auto rounded-xl [scrollbar-gutter:auto]! ring-1 ring-border sm:block`}
+        className={`${tableScroll.scrollClass} hidden min-h-0 flex-1 overflow-auto rounded-xl [scrollbar-gutter:auto]! ring-1 ring-border sm:block`}
       >
         <table className="w-full min-w-[920px] text-left text-[13px]">
-          <thead className="bg-surface-muted text-xs text-muted">
+          <thead className="sticky top-0 z-10 bg-surface-muted text-xs text-muted">
             <tr>
               <th className={headerCell}>{t.fieldTitle}</th>
               <th className={headerCell}>{t.fieldAuthor}</th>
@@ -167,6 +168,6 @@ export function VideoFileTable() {
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   )
 }
